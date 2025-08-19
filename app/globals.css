@@ -1,0 +1,169 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+:root {
+  /* Updated to modern dark green color palette from design brief */
+  --background: #ffffff; /* Clean white background */
+  --foreground: #1b3a2a; /* Dark green primary text */
+  --card: #f0f0f0; /* Light gray for card backgrounds */
+  --card-foreground: #1b3a2a; /* Dark green for card text */
+  --popover: rgba(255, 255, 255, 0.95); /* Semi-transparent white */
+  --popover-foreground: #1b3a2a; /* Dark green */
+  --primary: #1b3a2a; /* Dark green primary color */
+  --primary-foreground: #ffffff; /* White text on primary */
+  --secondary: #a3cda5; /* Soft green for secondary actions */
+  --secondary-foreground: #1b3a2a; /* Dark green text on secondary */
+  --muted: #f0f0f0; /* Light gray for muted backgrounds */
+  --muted-foreground: #4b5563; /* Dark gray for muted text */
+  --accent: #a3cda5; /* Soft green for accents */
+  --accent-foreground: #1b3a2a; /* Dark green text on accent */
+  --destructive: #dc2626; /* Red-600 for destructive actions */
+  --destructive-foreground: #ffffff; /* White text on destructive */
+  --border: #e0e0e0; /* Light gray for borders */
+  --input: #ffffff; /* White for input backgrounds */
+  --ring: rgba(27, 58, 42, 0.2); /* Dark green ring with opacity */
+  --warning: #f59e0b; /* Amber-500 for warnings */
+  --warning-foreground: #ffffff; /* White text on warning */
+  --success: #059669; /* Emerald-600 for success */
+  --success-foreground: #ffffff; /* White text on success */
+  --chart-1: #a3cda5; /* Soft green */
+  --chart-2: #1b3a2a; /* Dark green */
+  --chart-3: #4b5563; /* Dark gray */
+  --chart-4: #f0f0f0; /* Light gray */
+  --chart-5: #ffffff; /* White */
+  --radius: 0.5rem; /* Modern border radius */
+  --sidebar: #ffffff; /* White sidebar */
+  --sidebar-foreground: #1b3a2a; /* Dark green text */
+  --sidebar-primary: #a3cda5; /* Soft green */
+  --sidebar-primary-foreground: #1b3a2a; /* Dark green text */
+  --sidebar-accent: #a3cda5; /* Soft green accent */
+  --sidebar-accent-foreground: #1b3a2a; /* Dark green text */
+  --sidebar-border: #e0e0e0; /* Light gray border */
+  --sidebar-ring: rgba(27, 58, 42, 0.2); /* Dark green ring */
+  /* Updated font variables for Work Sans and Open Sans typography */
+  --font-work-sans: "Work Sans", sans-serif;
+  --font-open-sans: "Open Sans", sans-serif;
+  /* Updated font variables to use Inter for headers and Libertinus Sans for body text */
+  --font-inter: "Inter", sans-serif;
+  --font-libertinus: "Libertinus Sans", serif;
+}
+
+.dark {
+  /* Updated dark mode colors for modern dark green palette */
+  --background: #0f172a; /* Slate-900 dark background */
+  --foreground: #f1f5f9; /* Slate-100 light text */
+  --card: #1e293b; /* Slate-800 dark card */
+  --card-foreground: #f1f5f9; /* Slate-100 light text */
+  --popover: rgba(15, 23, 42, 0.95); /* Semi-transparent dark */
+  --popover-foreground: #f1f5f9; /* Slate-100 */
+  --primary: #1b3a2a; /* Dark green primary stays same */
+  --primary-foreground: #ffffff; /* White text */
+  --secondary: #a3cda5; /* Soft green secondary */
+  --secondary-foreground: #1b3a2a; /* Dark green text */
+  --muted: #334155; /* Slate-700 muted */
+  --muted-foreground: #94a3b8; /* Slate-400 muted text */
+  --accent: #a3cda5; /* Soft green accent */
+  --accent-foreground: #1b3a2a; /* Dark green text */
+  --destructive: #dc2626; /* Red-600 destructive */
+  --destructive-foreground: #ffffff; /* White text */
+  --border: #334155; /* Slate-700 border */
+  --input: #1e293b; /* Slate-800 input */
+  --ring: rgba(27, 58, 42, 0.2); /* Dark green ring */
+  --warning: #f59e0b; /* Amber-500 warning */
+  --warning-foreground: #ffffff; /* White text */
+  --success: #059669; /* Emerald-600 success */
+  --success-foreground: #ffffff; /* White text */
+  --chart-1: #a3cda5; /* Soft green */
+  --chart-2: #1b3a2a; /* Dark green */
+  --chart-3: #4b5563; /* Dark gray */
+  --chart-4: #f0f0f0; /* Light gray */
+  --chart-5: #ffffff; /* White */
+  --sidebar: #1e293b; /* Slate-800 sidebar */
+  --sidebar-foreground: #f1f5f9; /* Slate-100 text */
+  --sidebar-primary: #334155; /* Slate-700 */
+  --sidebar-primary-foreground: #f1f5f9; /* Slate-100 */
+  --sidebar-accent: #a3cda5; /* Soft green accent */
+  --sidebar-accent-foreground: #1b3a2a; /* Dark green text */
+  --sidebar-border: #334155; /* Slate-700 border */
+  --sidebar-ring: rgba(27, 58, 42, 0.2); /* Dark green ring */
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-warning: var(--warning);
+  --color-warning-foreground: var(--warning-foreground);
+  --color-success: var(--success);
+  --color-success-foreground: var(--success-foreground);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+  /* Updated font mappings for Inter headers and Libertinus Sans body text */
+  --font-sans: var(--font-libertinus);
+  --font-serif: var(--font-inter);
+  --font-mono: ui-monospace, SFMono-Regular, "SF Mono", Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground font-sans;
+  }
+
+  /* Updated glassmorphism utility classes for modern aesthetic */
+  .glass {
+    @apply bg-white/20 backdrop-blur-xl border border-white/30 shadow-xl;
+  }
+
+  .glass-dark {
+    @apply bg-black/20 backdrop-blur-xl border border-black/30 shadow-xl;
+  }
+
+  /* Updated gradient utility classes to modern dark green theme */
+  .gradient-primary {
+    background: linear-gradient(135deg, #1b3a2a 0%, #a3cda5 100%);
+  }
+
+  .gradient-secondary {
+    background: linear-gradient(135deg, #a3cda5 0%, #1b3a2a 100%);
+  }
+
+  .gradient-hero {
+    background: linear-gradient(135deg, #1b3a2a 0%, #2d5a3d 25%, #a3cda5 75%, #b8d4ba 100%);
+  }
+}
