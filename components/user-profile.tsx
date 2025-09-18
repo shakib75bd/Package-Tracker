@@ -1,8 +1,15 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { useAuth } from "@clerk/nextjs"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -16,7 +23,6 @@ import {
   Bell,
   MapPin,
   Clock,
-  Edit3,
   Trash2,
   Eye,
   Plus,
@@ -30,7 +36,8 @@ import {
   Shield,
   Award,
 } from "lucide-react"
-import { packageService, type PackageData } from "@/lib/package-service"
+import type { PackageData } from "@/lib/package-service"
+import { useUser } from "@clerk/nextjs"
 
 interface UserData {
   name: string
@@ -57,10 +64,13 @@ interface UserProfileProps {
   onViewPackage?: (trackingNumber: string) => void
 }
 
-export default function UserProfile({ onBack, onViewPackage }: UserProfileProps) {
+export default function UserProfile({
+  onBack,
+  onViewPackage,
+}: UserProfileProps) {
+  const { getToken } = useAuth()
   const [userData, setUserData] = useState<UserData>(mockUserData)
   const [packages, setPackages] = useState<PackageData[]>([])
-  const [isEditing, setIsEditing] = useState(false)
   const [searchQuery, setSearchQuery] = useState("")
   const [isLoadingPackages, setIsLoadingPackages] = useState(true)
   const [notifications, setNotifications] = useState({
@@ -69,12 +79,56 @@ export default function UserProfile({ onBack, onViewPackage }: UserProfileProps)
     push: true,
   })
 
+  // Clerk user
+  const { user } = useUser()
+  console.log(user?.fullName)
+
   useEffect(() => {
     const loadPackages = async () => {
+      setIsLoadingPackages(true)
       try {
-        const userPackages = await packageService.getUserPackages()
-        setPackages(userPackages)
-        setUserData((prev) => ({ ...prev, totalPackages: userPackages.length }))
+        const endpoint = "http://localhost:8000/graphql"
+        const token = await getToken()
+        const query = `query getPackages {   getPackages { id trackingNumber destination status }    }`
+        const res = await fetch(endpoint, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          },
+          body: JSON.stringify({ query }),
+        })
+        const json = await res.json()
+        if (!res.ok || json.errors) {
+          const msg =
+            json.errors?.map((e: any) => e.message).join(", ") || res.statusText
+          throw new Error(msg)
+        }
+        const apiPkgs: Array<{
+          id: string
+          trackingNumber: string
+          destination: string
+          status: string
+        }> = json.data?.getPackages || []
+
+        const mapped: PackageData[] = apiPkgs.map((p) => ({
+          trackingNumber: p.trackingNumber,
+          carrier: "Unknown",
+          // Use raw server status; cast for local type compat
+          status: p.status as unknown as PackageData["status"],
+          estimatedDelivery: "-",
+          origin: "-",
+          destination: p.destination || "-",
+          weight: "-",
+          dimensions: "-",
+          service: "-",
+          progress: 0,
+          events: [],
+          lastUpdated: "-",
+        }))
+
+        setPackages(mapped)
+        setUserData((prev) => ({ ...prev, totalPackages: mapped.length }))
       } catch (error) {
         console.error("Failed to load packages:", error)
       } finally {
@@ -83,25 +137,59 @@ export default function UserProfile({ onBack, onViewPackage }: UserProfileProps)
     }
 
     loadPackages()
-  }, [])
+  }, [getToken])
 
-  const filteredPackages = packages.filter(
-    (pkg) =>
-      pkg.trackingNumber.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      pkg.description?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      pkg.carrier.toLowerCase().includes(searchQuery.toLowerCase()),
-  )
-
-  const handleSaveProfile = () => {
-    setIsEditing(false)
-    // Here you would typically save to backend
-  }
+  const filteredPackages = packages.filter((pkg) => {
+    const q = searchQuery.toLowerCase()
+    return (
+      pkg.trackingNumber.toLowerCase().includes(q) ||
+      pkg.destination.toLowerCase().includes(q) ||
+      pkg.status.toLowerCase().includes(q)
+    )
+  })
 
   const refreshPackages = async () => {
     setIsLoadingPackages(true)
     try {
-      const userPackages = await packageService.getUserPackages()
-      setPackages(userPackages)
+      const endpoint =
+        process.env.NEXT_PUBLIC_GRAPHQL_ENDPOINT || "/api/graphql"
+      const token = await getToken()
+      const query = `query getPackages {\n        getPackages { id trackingNumber destination status }\n      }`
+      const res = await fetch(endpoint, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({ query }),
+      })
+      const json = await res.json()
+      if (!res.ok || json.errors) {
+        const msg =
+          json.errors?.map((e: any) => e.message).join(", ") || res.statusText
+        throw new Error(msg)
+      }
+      const apiPkgs: Array<{
+        id: string
+        trackingNumber: string
+        destination: string
+        status: string
+      }> = json.data?.getPackages || []
+      const mapped: PackageData[] = apiPkgs.map((p) => ({
+        trackingNumber: p.trackingNumber,
+        carrier: "Unknown",
+        status: p.status as unknown as PackageData["status"],
+        estimatedDelivery: "-",
+        origin: "-",
+        destination: p.destination || "-",
+        weight: "-",
+        dimensions: "-",
+        service: "-",
+        progress: 0,
+        events: [],
+        lastUpdated: "-",
+      }))
+      setPackages(mapped)
     } catch (error) {
       console.error("Failed to refresh packages:", error)
     } finally {
@@ -130,8 +218,12 @@ export default function UserProfile({ onBack, onViewPackage }: UserProfileProps)
                 <User className="h-6 w-6 text-white" />
               </div>
               <div>
-                <h1 className="text-2xl font-serif font-bold text-foreground">My Profile</h1>
-                <p className="text-sm text-muted-foreground">Manage your account and preferences</p>
+                <h1 className="text-2xl font-serif font-bold text-foreground">
+                  My Profile
+                </h1>
+                <p className="text-sm text-muted-foreground">
+                  Manage your account and preferences
+                </p>
               </div>
             </div>
           </div>
@@ -173,23 +265,12 @@ export default function UserProfile({ onBack, onViewPackage }: UserProfileProps)
                     <div className="relative">
                       <Avatar className="w-32 h-32 mx-auto mb-6 ring-4 ring-secondary/30 shadow-2xl">
                         <AvatarImage
-                          src={
-                            userData.avatar ||
-                            "/placeholder.svg?height=200&width=200&query=professional business headshot" ||
-                            "/placeholder.svg" ||
-                            "/placeholder.svg" ||
-                            "/placeholder.svg" ||
-                            "/placeholder.svg" ||
-                            "/placeholder.svg"
-                          }
-                          alt={userData.name}
+                          src={user?.imageUrl}
+                          alt={user?.fullName!}
                         />
                         {/* Updated AvatarFallback to use emerald-800 */}
                         <AvatarFallback className="text-2xl font-bold bg-emerald-800 text-white">
-                          {userData.name
-                            .split(" ")
-                            .map((n) => n[0])
-                            .join("")}
+                          {user?.fullName}
                         </AvatarFallback>
                       </Avatar>
                       <div className="absolute -top-2 -right-2 p-2 bg-accent rounded-full shadow-lg">
@@ -197,26 +278,22 @@ export default function UserProfile({ onBack, onViewPackage }: UserProfileProps)
                       </div>
                     </div>
                     <CardTitle className="text-2xl font-serif font-bold text-foreground mb-2">
-                      {userData.name}
+                      {user?.fullName}
                     </CardTitle>
                     <CardDescription className="text-muted-foreground flex items-center justify-center gap-2 text-base">
                       <Clock className="w-4 h-4" />
-                      Member since {userData.memberSince}
+                      Member since {user?.createdAt?.toDateString()}
                     </CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-8">
                     <div className="text-center p-6 rounded-2xl bg-secondary/20 border border-secondary/30">
-                      <div className="text-4xl font-bold text-emerald-800 mb-2">{userData.totalPackages}</div>
-                      <div className="text-sm text-muted-foreground font-semibold">Total Packages Tracked</div>
+                      <div className="text-4xl font-bold text-emerald-800 mb-2">
+                        {userData.totalPackages}
+                      </div>
+                      <div className="text-sm text-muted-foreground font-semibold">
+                        Total Packages Tracked
+                      </div>
                     </div>
-                    <Button
-                      variant="outline"
-                      className="w-full border-emerald-800/30 hover:bg-emerald-800/10 hover:border-emerald-800/50 transition-all duration-300 rounded-xl h-12 font-medium bg-transparent"
-                      onClick={() => setIsEditing(true)}
-                    >
-                      <Edit3 className="w-4 h-4 mr-2" />
-                      Edit Profile
-                    </Button>
                   </CardContent>
                 </Card>
 
@@ -229,102 +306,42 @@ export default function UserProfile({ onBack, onViewPackage }: UserProfileProps)
                       Contact Information
                     </CardTitle>
                     <CardDescription className="text-muted-foreground text-base">
-                      Keep your contact details up to date for important notifications
+                      Keep your contact details up to date for important
+                      notifications
                     </CardDescription>
                   </CardHeader>
                   <CardContent>
-                    {isEditing ? (
-                      <div className="space-y-8">
-                        <div className="grid md:grid-cols-2 gap-8">
-                          <div className="space-y-3">
-                            <Label htmlFor="name" className="text-sm font-semibold text-foreground">
-                              Full Name
-                            </Label>
-                            <Input
-                              id="name"
-                              value={userData.name}
-                              onChange={(e) => setUserData({ ...userData, name: e.target.value })}
-                              className="bg-background/80 border-border/50 focus:border-emerald-800/50 focus:ring-emerald-800/20 rounded-xl h-12"
-                            />
-                          </div>
-                          <div className="space-y-3">
-                            <Label htmlFor="email" className="text-sm font-semibold text-foreground">
-                              Email Address
-                            </Label>
-                            <Input
-                              id="email"
-                              type="email"
-                              value={userData.email}
-                              onChange={(e) => setUserData({ ...userData, email: e.target.value })}
-                              className="bg-background/80 border-border/50 focus:border-emerald-800/50 focus:ring-emerald-800/20 rounded-xl h-12"
-                            />
-                          </div>
-                          <div className="space-y-3">
-                            <Label htmlFor="phone" className="text-sm font-semibold text-foreground">
-                              Phone Number
-                            </Label>
-                            <Input
-                              id="phone"
-                              value={userData.phone}
-                              onChange={(e) => setUserData({ ...userData, phone: e.target.value })}
-                              className="bg-background/80 border-border/50 focus:border-emerald-800/50 focus:ring-emerald-800/20 rounded-xl h-12"
-                            />
-                          </div>
-                        </div>
-                        <div className="space-y-3">
-                          <Label htmlFor="address" className="text-sm font-semibold text-foreground">
-                            Delivery Address
+                    <div className="space-y-8">
+                      <div className="grid md:grid-cols-2 gap-10">
+                        <div className="space-y-2">
+                          <Label className="text-sm text-muted-foreground flex items-center gap-2 font-medium">
+                            <Mail className="w-4 h-4 mr-2 sm:mr-2 sm:inline hidden" />
+                            Email Address
                           </Label>
-                          <Input
-                            id="address"
-                            value={userData.address}
-                            onChange={(e) => setUserData({ ...userData, address: e.target.value })}
-                            className="bg-background/80 border-border/50 focus:border-emerald-800/50 focus:ring-emerald-800/20 rounded-xl h-12"
-                          />
-                        </div>
-                        <div className="flex gap-4">
-                          <Button
-                            onClick={handleSaveProfile}
-                            className="bg-emerald-800 hover:bg-emerald-700 text-white shadow-xl rounded-xl h-12 px-8 font-medium"
-                          >
-                            Save Changes
-                          </Button>
-                          <Button
-                            variant="outline"
-                            onClick={() => setIsEditing(false)}
-                            className="rounded-xl h-12 px-8"
-                          >
-                            Cancel
-                          </Button>
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="space-y-8">
-                        <div className="grid md:grid-cols-2 gap-10">
-                          <div className="space-y-2">
-                            <Label className="text-sm text-muted-foreground flex items-center gap-2 font-medium">
-                              <Mail className="w-4 h-4 mr-2 sm:mr-2 sm:inline hidden" />
-                              Email Address
-                            </Label>
-                            <p className="font-semibold text-foreground text-lg">{userData.email}</p>
-                          </div>
-                          <div className="space-y-2">
-                            <Label className="text-sm text-muted-foreground flex items-center gap-2 font-medium">
-                              <Smartphone className="w-4 h-4 mr-2 sm:mr-2 sm:inline hidden" />
-                              Phone Number
-                            </Label>
-                            <p className="font-semibold text-foreground text-lg">{userData.phone}</p>
-                          </div>
+                          <p className="font-semibold text-foreground text-lg">
+                            {user?.primaryEmailAddress?.emailAddress}
+                          </p>
                         </div>
                         <div className="space-y-2">
                           <Label className="text-sm text-muted-foreground flex items-center gap-2 font-medium">
-                            <MapPin className="w-4 h-4 mr-2 sm:mr-2 sm:inline hidden" />
-                            Delivery Address
+                            <Smartphone className="w-4 h-4 mr-2 sm:mr-2 sm:inline hidden" />
+                            Phone Number
                           </Label>
-                          <p className="font-semibold text-foreground text-lg">{userData.address}</p>
+                          <p className="font-semibold text-foreground text-lg">
+                            {userData.phone}
+                          </p>
                         </div>
                       </div>
-                    )}
+                      <div className="space-y-2">
+                        <Label className="text-sm text-muted-foreground flex items-center gap-2 font-medium">
+                          <MapPin className="w-4 h-4 mr-2 sm:mr-2 sm:inline hidden" />
+                          Delivery Address
+                        </Label>
+                        <p className="font-semibold text-foreground text-lg">
+                          {userData.address}
+                        </p>
+                      </div>
+                    </div>
                   </CardContent>
                 </Card>
               </div>
@@ -332,28 +349,58 @@ export default function UserProfile({ onBack, onViewPackage }: UserProfileProps)
               <div className="grid md:grid-cols-4 gap-6">
                 <Card className="text-center p-6 border border-success/20 bg-success/5 hover:bg-success/10 hover:shadow-lg transition-all duration-300 rounded-2xl">
                   <div className="text-3xl font-bold text-success mb-2">
-                    {packages.filter((p) => p.status === "delivered").length}
+                    {
+                      packages.filter(
+                        (p) => String(p.status).toUpperCase() === "DELIVERED"
+                      ).length
+                    }
                   </div>
-                  <div className="text-sm text-success font-medium">Delivered</div>
+                  <div className="text-sm text-success font-medium">
+                    Delivered
+                  </div>
                 </Card>
                 {/* Updated In Transit card to use emerald-800 */}
                 <Card className="text-center p-6 border border-emerald-800/20 bg-emerald-800/5 hover:bg-emerald-800/10 hover:shadow-lg transition-all duration-300 rounded-2xl">
                   <div className="text-3xl font-bold text-emerald-800 mb-2">
-                    {packages.filter((p) => p.status === "in-transit").length}
+                    {
+                      packages.filter((p) => {
+                        const s = String(p.status).toUpperCase()
+                        return s === "SHIPPED" || s === "OUT_FOR_DELIVERY"
+                      }).length
+                    }
                   </div>
-                  <div className="text-sm text-emerald-800 font-medium">In Transit</div>
+                  <div className="text-sm text-emerald-800 font-medium">
+                    In Transit
+                  </div>
                 </Card>
                 <Card className="text-center p-6 border border-warning/20 bg-warning/5 hover:bg-warning/10 hover:shadow-lg transition-all duration-300 rounded-2xl">
                   <div className="text-3xl font-bold text-warning mb-2">
-                    {packages.filter((p) => p.status === "pending").length}
+                    {
+                      packages.filter((p) => {
+                        const s = String(p.status).toUpperCase()
+                        return (
+                          s === "PENDING" ||
+                          s === "CONFIRMED" ||
+                          s === "PROCESSING"
+                        )
+                      }).length
+                    }
                   </div>
-                  <div className="text-sm text-warning font-medium">Pending</div>
+                  <div className="text-sm text-warning font-medium">
+                    Pending
+                  </div>
                 </Card>
                 <Card className="text-center p-6 border border-destructive/20 bg-destructive/5 hover:bg-destructive/10 hover:shadow-lg transition-all duration-300 rounded-2xl">
                   <div className="text-3xl font-bold text-destructive mb-2">
-                    {packages.filter((p) => p.status === "exception").length}
+                    {
+                      packages.filter(
+                        (p) => String(p.status).toUpperCase() === "EXCEPTION"
+                      ).length
+                    }
                   </div>
-                  <div className="text-sm text-destructive font-medium">Issues</div>
+                  <div className="text-sm text-destructive font-medium">
+                    Issues
+                  </div>
                 </Card>
               </div>
             </TabsContent>
@@ -364,14 +411,24 @@ export default function UserProfile({ onBack, onViewPackage }: UserProfileProps)
                 <CardHeader>
                   <div className="flex items-center justify-between">
                     <div>
-                      <CardTitle className="text-xl font-serif font-bold text-foreground">My Packages</CardTitle>
+                      <CardTitle className="text-xl font-serif font-bold text-foreground">
+                        My Packages
+                      </CardTitle>
                       <CardDescription className="text-muted-foreground">
                         Track and manage all your packages
                       </CardDescription>
                     </div>
                     <div className="flex gap-2">
-                      <Button variant="outline" onClick={refreshPackages} disabled={isLoadingPackages}>
-                        <RefreshCw className={`w-4 h-4 mr-2 ${isLoadingPackages ? "animate-spin" : ""}`} />
+                      <Button
+                        variant="outline"
+                        onClick={refreshPackages}
+                        disabled={isLoadingPackages}
+                      >
+                        <RefreshCw
+                          className={`w-4 h-4 mr-2 ${
+                            isLoadingPackages ? "animate-spin" : ""
+                          }`}
+                        />
                         Refresh
                       </Button>
                       {/* Updated Add Package button to use emerald-800 */}
@@ -387,7 +444,7 @@ export default function UserProfile({ onBack, onViewPackage }: UserProfileProps)
                   <div className="relative mb-6">
                     <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
                     <Input
-                      placeholder="Search packages by tracking number, description, or carrier..."
+                      placeholder="Search by tracking number, destination, or status..."
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
                       className="pl-10"
@@ -398,26 +455,39 @@ export default function UserProfile({ onBack, onViewPackage }: UserProfileProps)
                   {isLoadingPackages ? (
                     <div className="text-center py-8">
                       <div className="w-8 h-8 border-2 border-emerald-800/30 border-t-emerald-800 rounded-full animate-spin mx-auto mb-4" />
-                      <p className="text-muted-foreground">Loading packages...</p>
+                      <p className="text-muted-foreground">
+                        Loading packages...
+                      </p>
                     </div>
                   ) : (
                     <div className="space-y-4">
                       {filteredPackages.map((pkg) => (
-                        <Card key={pkg.trackingNumber} className="border-border/30 hover:shadow-md transition-shadow">
+                        <Card
+                          key={pkg.trackingNumber}
+                          className="border-border/30 hover:shadow-md transition-shadow"
+                        >
                           <CardContent className="p-4">
                             <div className="flex items-center justify-between">
                               <div className="flex-1">
                                 <div className="flex items-center gap-3 mb-2">
                                   {/* Updated Package icon to use emerald-800 */}
                                   <Package className="w-5 h-5 text-emerald-800" />
-                                  <h4 className="font-semibold text-foreground">{pkg.description || "Package"}</h4>
-                                  <Badge className={packageService.getStatusColor(pkg.status)} variant="secondary">
-                                    {packageService.getStatusText(pkg.status)}
+                                  <h4 className="font-semibold text-foreground">
+                                    {pkg.trackingNumber} • {pkg.destination}
+                                  </h4>
+                                  <Badge
+                                    variant="secondary"
+                                    className="uppercase"
+                                  >
+                                    {String(pkg.status)}
                                   </Badge>
                                 </div>
                                 <div className="grid md:grid-cols-3 gap-4 text-sm text-muted-foreground">
                                   <div>
-                                    <span className="font-medium">Tracking:</span> {pkg.trackingNumber}
+                                    <span className="font-medium">
+                                      Tracking:
+                                    </span>{" "}
+                                    {pkg.trackingNumber}
                                   </div>
                                   <div className="flex items-center gap-1">
                                     <Clock className="w-3 h-3" />
@@ -433,7 +503,13 @@ export default function UserProfile({ onBack, onViewPackage }: UserProfileProps)
                                 </div>
                               </div>
                               <div className="flex items-center gap-2 ml-4">
-                                <Button variant="outline" size="sm" onClick={() => onViewPackage?.(pkg.trackingNumber)}>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() =>
+                                    onViewPackage?.(pkg.trackingNumber)
+                                  }
+                                >
                                   <Eye className="w-4 h-4 mr-1" />
                                   View
                                 </Button>
@@ -462,7 +538,8 @@ export default function UserProfile({ onBack, onViewPackage }: UserProfileProps)
                     Notification Preferences
                   </CardTitle>
                   <CardDescription className="text-muted-foreground text-base">
-                    Customize how you receive updates about your packages and account activity
+                    Customize how you receive updates about your packages and
+                    account activity
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-8">
@@ -472,15 +549,20 @@ export default function UserProfile({ onBack, onViewPackage }: UserProfileProps)
                         <Mail className="w-6 h-6 text-success-foreground" />
                       </div>
                       <div>
-                        <p className="font-semibold text-foreground text-lg">Email Notifications</p>
+                        <p className="font-semibold text-foreground text-lg">
+                          Email Notifications
+                        </p>
                         <p className="text-sm text-muted-foreground">
-                          Receive detailed package updates and delivery confirmations
+                          Receive detailed package updates and delivery
+                          confirmations
                         </p>
                       </div>
                     </div>
                     <Switch
                       checked={notifications.email}
-                      onCheckedChange={(checked) => setNotifications({ ...notifications, email: checked })}
+                      onCheckedChange={(checked) =>
+                        setNotifications({ ...notifications, email: checked })
+                      }
                     />
                   </div>
 
@@ -490,13 +572,19 @@ export default function UserProfile({ onBack, onViewPackage }: UserProfileProps)
                         <Smartphone className="w-6 h-6 text-white" />
                       </div>
                       <div>
-                        <p className="font-semibold text-foreground text-lg">SMS Notifications</p>
-                        <p className="text-sm text-muted-foreground">Get instant alerts for critical package updates</p>
+                        <p className="font-semibold text-foreground text-lg">
+                          SMS Notifications
+                        </p>
+                        <p className="text-sm text-muted-foreground">
+                          Get instant alerts for critical package updates
+                        </p>
                       </div>
                     </div>
                     <Switch
                       checked={notifications.sms}
-                      onCheckedChange={(checked) => setNotifications({ ...notifications, sms: checked })}
+                      onCheckedChange={(checked) =>
+                        setNotifications({ ...notifications, sms: checked })
+                      }
                     />
                   </div>
 
@@ -506,7 +594,9 @@ export default function UserProfile({ onBack, onViewPackage }: UserProfileProps)
                         <Monitor className="w-6 h-6 text-accent-foreground" />
                       </div>
                       <div>
-                        <p className="font-semibold text-foreground text-lg">Push Notifications</p>
+                        <p className="font-semibold text-foreground text-lg">
+                          Push Notifications
+                        </p>
                         <p className="text-sm text-muted-foreground">
                           Real-time browser notifications for immediate updates
                         </p>
@@ -514,7 +604,9 @@ export default function UserProfile({ onBack, onViewPackage }: UserProfileProps)
                     </div>
                     <Switch
                       checked={notifications.push}
-                      onCheckedChange={(checked) => setNotifications({ ...notifications, push: checked })}
+                      onCheckedChange={(checked) =>
+                        setNotifications({ ...notifications, push: checked })
+                      }
                     />
                   </div>
                 </CardContent>
@@ -529,7 +621,8 @@ export default function UserProfile({ onBack, onViewPackage }: UserProfileProps)
                     Account Management
                   </CardTitle>
                   <CardDescription className="text-muted-foreground text-base">
-                    Manage your account data, privacy settings, and account preferences
+                    Manage your account data, privacy settings, and account
+                    preferences
                   </CardDescription>
                 </CardHeader>
                 <CardContent>

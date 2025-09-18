@@ -1,17 +1,17 @@
-"use client";
+"use client"
 
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card";
-import { Package, Search, Truck, MapPin, User, Zap } from "lucide-react";
-import Link from "next/link";
-import Navbar from "@/components/navbar";
+} from "@/components/ui/card"
+import { Package, Search, Truck, MapPin, User, Zap } from "lucide-react"
+import Link from "next/link"
+import Navbar from "@/components/navbar"
 
 export default function HomePage() {
   return (
@@ -159,5 +159,5 @@ export default function HomePage() {
         </div>
       </footer>
     </div>
-  );
+  )
 }
