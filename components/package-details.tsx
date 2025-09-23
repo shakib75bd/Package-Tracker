@@ -1,25 +1,10 @@
 "use client"
 import React, { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import {
-  Package,
-  ArrowLeft,
-  Copy,
-  Share2,
-  RefreshCw,
-  MapPin,
-} from "lucide-react"
+import { Package, ArrowLeft, Copy, Share2, RefreshCw } from "lucide-react"
 import { useAuth } from "@clerk/nextjs"
 import { type PackageData } from "@/lib/package-service"
-import { motion } from "framer-motion"
 
 const stationOrder = [
   "ELENGA",
@@ -156,6 +141,15 @@ export default function PackageDetails({
 
   const progressIndex = getProgressIndex(currentPackageData.station)
 
+  // Fake history: just reverse station order for demo
+  const trackingHistory = stationOrder
+    .map((station, i) => ({
+      station,
+      time: `${25 + i} Sep 2025`,
+      status: i === progressIndex ? currentPackageData.status : "Pending",
+    }))
+    .reverse()
+
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
@@ -169,7 +163,7 @@ export default function PackageDetails({
             )}
             <div className="flex items-center gap-2">
               <Package className="h-6 w-6 text-primary" />
-              <h1 className="text-lg font-semibold">Package Details</h1>
+              <h1 className="text-lg font-semibold">Tracking Details</h1>
             </div>
           </div>
           <div className="flex items-center gap-2">
@@ -211,104 +205,82 @@ export default function PackageDetails({
         </div>
       </header>
 
-      <main className="container mx-auto px-4 py-8">
-        <div className="max-w-4xl mx-auto space-y-6">
-          {/* Package Summary Card */}
-          <Card className="shadow-lg border-border/50">
-            <CardHeader>
-              <CardTitle className="text-xl font-bold">
-                Tracking #{currentPackageData.trackingNumber}
-              </CardTitle>
-              <CardDescription>
-                Current Status:{" "}
-                <Badge variant="outline">{currentPackageData.status}</Badge>
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="grid md:grid-cols-2 gap-6">
-                <div className="space-y-2">
-                  <p className="text-sm text-muted-foreground">Sender</p>
-                  <p className="font-medium">
-                    {currentPackageData.sender ?? "-"}
-                  </p>
-                  <p className="text-sm text-muted-foreground">Receiver</p>
-                  <p className="font-medium">
-                    {currentPackageData.receiver ?? "-"}
-                  </p>
-                  <p className="text-sm text-muted-foreground">Destination</p>
-                  <p className="font-medium">
-                    {currentPackageData.destination ?? "-"}
-                  </p>
-                  <p className="text-sm text-muted-foreground">Station</p>
-                  <p className="font-medium">
-                    {currentPackageData.station ?? "-"}
-                  </p>
-                </div>
-                <div>
-                  {currentPackageData.coordinates?.lat &&
-                    currentPackageData.coordinates?.lng && (
-                      <iframe
-                        title="Google Map Preview"
-                        width="100%"
-                        height="200"
-                        className="rounded-xl"
-                        style={{ border: 0 }}
-                        loading="lazy"
-                        src={`https://www.google.com/maps?q=${currentPackageData.coordinates.lat},${currentPackageData.coordinates.lng}&hl=es;z=14&output=embed`}
-                      />
-                    )}
-                </div>
+      <main className="container mx-auto px-4 py-8 max-w-2xl">
+        {/* Package Details Card */}
+        <div className="bg-card rounded-xl shadow p-6 mb-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <div className="mb-2">
+                <span className="font-semibold">Tracking #:</span>
+                <span className="ml-2">
+                  {currentPackageData.trackingNumber}
+                </span>
               </div>
+              <div className="mb-2">
+                <span className="font-semibold">Sender:</span>
+                <span className="ml-2">{currentPackageData.sender}</span>
+              </div>
+              <div className="mb-2">
+                <span className="font-semibold">Receiver:</span>
+                <span className="ml-2">{currentPackageData.receiver}</span>
+              </div>
+              <div className="mb-2">
+                <span className="font-semibold">Destination:</span>
+                <span className="ml-2">{currentPackageData.destination}</span>
+              </div>
+              <div className="mb-2">
+                <span className="font-semibold">Current Station:</span>
+                <span className="ml-2">{currentPackageData.station}</span>
+              </div>
+              <div className="mb-2">
+                <span className="font-semibold">Status:</span>
+                <Badge className="ml-2" variant="outline">
+                  {currentPackageData.status}
+                </Badge>
+              </div>
+            </div>
+            {/* Google Maps Preview for Coordinates */}
+            <div>
+              {currentPackageData.coordinates &&
+                typeof currentPackageData.coordinates.lat === "number" &&
+                typeof currentPackageData.coordinates.lng === "number" && (
+                  <div className="rounded-lg overflow-hidden border border-muted">
+                    <iframe
+                      title="Google Maps Preview"
+                      width="100%"
+                      height="200"
+                      style={{ border: 0 }}
+                      loading="lazy"
+                      allowFullScreen
+                      src={`https://maps.google.com/maps?q=${currentPackageData.coordinates.lat},${currentPackageData.coordinates.lng}&z=15&output=embed`}
+                    />
+                    <div className="text-xs text-muted-foreground mt-2">
+                      Lat: {currentPackageData.coordinates.lat}, Lng:{" "}
+                      {currentPackageData.coordinates.lng}
+                    </div>
+                  </div>
+                )}
+            </div>
+          </div>
+        </div>
 
-              {/* Modern Timeline */}
-              <div className="space-y-4">
-                <h3 className="text-sm text-muted-foreground">
-                  Delivery Timeline
-                </h3>
-                <div className="flex items-center justify-between relative">
-                  {stationOrder.map((station, i) => {
-                    const reached = i <= progressIndex
-                    return (
-                      <div
-                        key={station}
-                        className="flex-1 flex flex-col items-center"
-                      >
-                        <motion.div
-                          initial={false}
-                          animate={{
-                            backgroundColor: reached
-                              ? "hsl(var(--primary))"
-                              : "hsl(var(--muted))",
-                            scale: reached ? 1.1 : 1,
-                          }}
-                          className="w-4 h-4 rounded-full"
-                        />
-                        <p
-                          className={`mt-2 text-xs ${
-                            reached
-                              ? "text-primary font-medium"
-                              : "text-muted-foreground"
-                          }`}
-                        >
-                          {station}
-                        </p>
-                      </div>
-                    )
-                  })}
-                  {/* Line behind dots */}
-                  <div className="absolute top-2 left-0 w-full h-0.5 bg-muted -z-10" />
-                  <div
-                    className="absolute top-2 left-0 h-0.5 bg-primary -z-10 transition-all duration-500"
-                    style={{
-                      width: `${
-                        ((progressIndex + 1) / stationOrder.length) * 100
-                      }%`,
-                    }}
-                  />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+        {/* Timeline */}
+        <div className="space-y-6">
+          <h3 className="font-semibold text-lg">Tracking History</h3>
+          <ul className="relative border-l border-muted pl-4">
+            {trackingHistory.map((item, i) => (
+              <li key={i} className="mb-8 ml-2">
+                <div className="absolute -left-[9px] w-4 h-4 rounded-full border-2 border-primary bg-background" />
+                <time className="block text-xs text-muted-foreground">
+                  {item.time}
+                </time>
+                <p className="font-medium">{item.status}</p>
+                <p className="text-sm text-muted-foreground">
+                  at {item.station}
+                </p>
+              </li>
+            ))}
+          </ul>
         </div>
       </main>
     </div>
