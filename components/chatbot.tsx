@@ -20,6 +20,7 @@ import { Badge } from "./ui/badge"
 import { useAuth } from "@clerk/nextjs"
 import { PackageData } from "@/lib/package-service"
 import { useRouter } from "next/navigation"
+import PackageDetails from "./package-details"
 
 interface Message {
   id: string
