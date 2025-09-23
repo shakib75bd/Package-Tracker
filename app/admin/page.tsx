@@ -1,10 +1,10 @@
-"use client"
+"use client";
 
-import { useEffect, useState } from "react"
-import { useAuth, SignedIn, SignedOut } from "@clerk/nextjs"
-import Navbar from "@/components/navbar"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
+import { useEffect, useState } from "react";
+import { useAuth, SignedIn, SignedOut } from "@clerk/nextjs";
+import Navbar from "@/components/navbar";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import {
   Table,
   TableBody,
@@ -13,59 +13,59 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table"
-import { RefreshCw } from "lucide-react"
+} from "@/components/ui/table";
+import { RefreshCw } from "lucide-react";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select"
+} from "@/components/ui/select";
 
 export default function AdminPage() {
-  const { userId, getToken } = useAuth()
-  const adminId = process.env.NEXT_PUBLIC_ADMIN_USER || process.env.ADMIN_USER
-  const isAdmin = userId === adminId
+  const { userId, getToken } = useAuth();
+  const adminId = process.env.NEXT_PUBLIC_ADMIN_USER || process.env.ADMIN_USER;
+  const isAdmin = userId === adminId;
   const [form, setForm] = useState({
     sender: "",
     receiver: "",
     destination: "",
     userId: "",
-  })
-  const [status, setStatus] = useState("")
-  const [packageId, setPackageId] = useState("")
-  const [message, setMessage] = useState("")
-  const [error, setError] = useState("")
+  });
+  const [status, setStatus] = useState("");
+  const [packageId, setPackageId] = useState("");
+  const [message, setMessage] = useState("");
+  const [error, setError] = useState("");
   const [packages, setPackages] = useState<
     Array<{
-      id: string
-      trackingNumber: string
-      sender: string
-      receiver: string
-      destination: string
-      status: string
-      createdAt?: string
-      updatedAt?: string
+      id: string;
+      trackingNumber: string;
+      sender: string;
+      receiver: string;
+      destination: string;
+      status: string;
+      createdAt?: string;
+      updatedAt?: string;
     }>
-  >([])
-  const [loadingPkgs, setLoadingPkgs] = useState(false)
+  >([]);
+  const [loadingPkgs, setLoadingPkgs] = useState(false);
 
   function handleChange(e: React.ChangeEvent<HTMLInputElement>) {
-    setForm({ ...form, [e.target.name]: e.target.value })
+    setForm({ ...form, [e.target.name]: e.target.value });
   }
 
   useEffect(() => {
-    console.log(form)
-  }, [form])
+    console.log(form);
+  }, [form]);
 
   async function fetchPackages() {
-    setError("")
-    setLoadingPkgs(true)
+    setError("");
+    setLoadingPkgs(true);
     try {
-      const endpoint = "http://localhost:8000/graphql"
-      const token = await getToken()
-      const query = `query getPackages {getPackages { id trackingNumber sender receiver destination status }   }`
+      const endpoint = "http://localhost:8000/graphql";
+      const token = await getToken();
+      const query = `query getPackages {getPackages { id trackingNumber sender receiver destination status }   }`;
       const res = await fetch(endpoint, {
         method: "POST",
         headers: {
@@ -73,34 +73,34 @@ export default function AdminPage() {
           ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
         body: JSON.stringify({ query }),
-      })
-      const json = await res.json()
+      });
+      const json = await res.json();
       if (!res.ok || json.errors) {
         const msg =
-          json.errors?.map((e: any) => e.message).join(", ") || res.statusText
-        throw new Error(msg)
+          json.errors?.map((e: any) => e.message).join(", ") || res.statusText;
+        throw new Error(msg);
       }
-      setPackages(json.data.getPackages || [])
+      setPackages(json.data.getPackages || []);
     } catch (err: any) {
-      setError(err.message || "Failed to load packages")
+      setError(err.message || "Failed to load packages");
     } finally {
-      setLoadingPkgs(false)
+      setLoadingPkgs(false);
     }
   }
 
   useEffect(() => {
     // auto-load packages when admin page mounts and user is admin
-    if (isAdmin) fetchPackages()
+    if (isAdmin) fetchPackages();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isAdmin])
+  }, [isAdmin]);
 
   async function handleCreate(e: React.FormEvent<HTMLFormElement>) {
-    e.preventDefault()
-    setError("")
-    setMessage("")
+    e.preventDefault();
+    setError("");
+    setMessage("");
     try {
-      const endpoint = "http://localhost:8000/graphql"
-      const token = await getToken()
+      const endpoint = "http://localhost:8000/graphql";
+      const token = await getToken();
       const query = `mutation createPackage(
       $sender: String!
       $receiver: String!
@@ -115,7 +115,7 @@ export default function AdminPage() {
       ) {
         id
       }
-    }`
+    }`;
 
       const res = await fetch(endpoint, {
         method: "POST",
@@ -124,34 +124,34 @@ export default function AdminPage() {
           ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
         body: JSON.stringify({ query, variables: { ...form } }),
-      })
-      const json = await res.json()
+      });
+      const json = await res.json();
       if (!res.ok || json.errors) {
         const msg =
-          json.errors?.map((e: any) => e.message).join(", ") || res.statusText
-        throw new Error(msg)
+          json.errors?.map((e: any) => e.message).join(", ") || res.statusText;
+        throw new Error(msg);
       }
-      setMessage(`Created package ${json.data.createPackage.id}`)
-      setForm({ sender: "", receiver: "", destination: "", userId: "" })
+      setMessage(`Created package ${json.data.createPackage.id}`);
+      setForm({ sender: "", receiver: "", destination: "", userId: "" });
     } catch (err: any) {
-      setError(err.message || "Failed to create package")
+      setError(err.message || "Failed to create package");
     }
   }
 
   async function handleUpdateStatus(e: React.FormEvent<HTMLFormElement>) {
-    e.preventDefault()
-    setError("")
-    setMessage("")
+    e.preventDefault();
+    setError("");
+    setMessage("");
     if (!status) {
-      setError("Please select a status")
-      return
+      setError("Please select a status");
+      return;
     }
     try {
-      const endpoint = "http://localhost:8000/graphql"
-      const token = await getToken()
+      const endpoint = "http://localhost:8000/graphql";
+      const token = await getToken();
       const query = `mutation updatePackageStatus($id: String!, $status: String!) {
         updatePackageStatus(id: $id, status: $status) { id status }
-      }`
+      }`;
       const res = await fetch(endpoint, {
         method: "POST",
         headers: {
@@ -159,20 +159,20 @@ export default function AdminPage() {
           ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
         body: JSON.stringify({ query, variables: { id: packageId, status } }),
-      })
-      const json = await res.json()
+      });
+      const json = await res.json();
       if (!res.ok || json.errors) {
         const msg =
-          json.errors?.map((e: any) => e.message).join(", ") || res.statusText
-        throw new Error(msg)
+          json.errors?.map((e: any) => e.message).join(", ") || res.statusText;
+        throw new Error(msg);
       }
       setMessage(
         `Updated ${json.data.updatePackageStatus.id} to ${json.data.updatePackageStatus.status}`
-      )
-      setPackageId("")
-      setStatus("")
+      );
+      setPackageId("");
+      setStatus("");
     } catch (err: any) {
-      setError(err.message || "Failed to update package status")
+      setError(err.message || "Failed to update package status");
     }
   }
 
@@ -333,5 +333,5 @@ export default function AdminPage() {
         </SignedOut>
       </main>
     </div>
-  )
+  );
 }

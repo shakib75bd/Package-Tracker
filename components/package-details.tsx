@@ -1,9 +1,15 @@
-"use client"
-import { useState } from "react"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { Progress } from "@/components/ui/progress"
+"use client";
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
 import {
   Package,
   MapPin,
@@ -16,36 +22,42 @@ import {
   Share2,
   Bell,
   RefreshCw,
-} from "lucide-react"
-import { packageService, type PackageData } from "@/lib/package-service"
+} from "lucide-react";
+import { packageService, type PackageData } from "@/lib/package-service";
 
 interface PackageDetailsProps {
-  packageData: PackageData
-  onBack?: () => void
+  packageData: PackageData;
+  onBack?: () => void;
 }
 
-export default function PackageDetails({ packageData, onBack }: PackageDetailsProps) {
-  const [currentPackageData, setCurrentPackageData] = useState<PackageData>(packageData)
-  const [isNotificationEnabled, setIsNotificationEnabled] = useState(false)
-  const [isRefreshing, setIsRefreshing] = useState(false)
+export default function PackageDetails({
+  packageData,
+  onBack,
+}: PackageDetailsProps) {
+  const [currentPackageData, setCurrentPackageData] =
+    useState<PackageData>(packageData);
+  const [isNotificationEnabled, setIsNotificationEnabled] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   const handleRefresh = async () => {
-    setIsRefreshing(true)
+    setIsRefreshing(true);
     try {
-      const updatedData = await packageService.trackPackage(currentPackageData.trackingNumber)
+      const updatedData = await packageService.trackPackage(
+        currentPackageData.trackingNumber
+      );
       if (updatedData) {
-        setCurrentPackageData(updatedData)
+        setCurrentPackageData(updatedData);
       }
     } catch (error) {
-      console.error("Failed to refresh package data:", error)
+      console.error("Failed to refresh package data:", error);
     } finally {
-      setIsRefreshing(false)
+      setIsRefreshing(false);
     }
-  }
+  };
 
   const copyTrackingNumber = () => {
-    navigator.clipboard.writeText(currentPackageData.trackingNumber)
-  }
+    navigator.clipboard.writeText(currentPackageData.trackingNumber);
+  };
 
   const shareTracking = () => {
     if (navigator.share) {
@@ -53,9 +65,9 @@ export default function PackageDetails({ packageData, onBack }: PackageDetailsPr
         title: "Package Tracking",
         text: `Track package ${currentPackageData.trackingNumber}`,
         url: window.location.href,
-      })
+      });
     }
-  }
+  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -65,19 +77,35 @@ export default function PackageDetails({ packageData, onBack }: PackageDetailsPr
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
               {onBack && (
-                <Button variant="ghost" size="sm" onClick={onBack} className="text-foreground hover:text-primary">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={onBack}
+                  className="text-foreground hover:text-primary"
+                >
                   <ArrowLeft className="w-4 h-4 mr-2" />
                   Back
                 </Button>
               )}
               <div className="flex items-center gap-2">
                 <Package className="h-6 w-6 text-primary" />
-                <h1 className="text-xl font-serif font-bold text-foreground">Package Details</h1>
+                <h1 className="text-xl font-serif font-bold text-foreground">
+                  Package Details
+                </h1>
               </div>
             </div>
             <div className="flex items-center gap-2">
-              <Button variant="outline" size="sm" onClick={handleRefresh} disabled={isRefreshing}>
-                <RefreshCw className={`w-4 h-4 mr-2 ${isRefreshing ? "animate-spin" : ""}`} />
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleRefresh}
+                disabled={isRefreshing}
+              >
+                <RefreshCw
+                  className={`w-4 h-4 mr-2 ${
+                    isRefreshing ? "animate-spin" : ""
+                  }`}
+                />
                 {isRefreshing ? "Refreshing..." : "Refresh"}
               </Button>
               <Button variant="outline" size="sm" onClick={copyTrackingNumber}>
@@ -107,7 +135,12 @@ export default function PackageDetails({ packageData, onBack }: PackageDetailsPr
                     {currentPackageData.carrier} • {currentPackageData.service}
                   </CardDescription>
                 </div>
-                <Badge className={packageService.getStatusColor(currentPackageData.status)} variant="secondary">
+                <Badge
+                  className={packageService.getStatusColor(
+                    currentPackageData.status
+                  )}
+                  variant="secondary"
+                >
                   {packageService.getStatusText(currentPackageData.status)}
                 </Badge>
               </div>
@@ -116,8 +149,12 @@ export default function PackageDetails({ packageData, onBack }: PackageDetailsPr
               {/* Progress Bar */}
               <div className="space-y-2">
                 <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Delivery Progress</span>
-                  <span className="text-foreground font-medium">{currentPackageData.progress}%</span>
+                  <span className="text-muted-foreground">
+                    Delivery Progress
+                  </span>
+                  <span className="text-foreground font-medium">
+                    {currentPackageData.progress}%
+                  </span>
                 </div>
                 <Progress value={currentPackageData.progress} className="h-2" />
               </div>
@@ -130,8 +167,12 @@ export default function PackageDetails({ packageData, onBack }: PackageDetailsPr
                       <Clock className="w-5 h-5 text-primary" />
                     </div>
                     <div>
-                      <p className="text-sm text-muted-foreground">Estimated Delivery</p>
-                      <p className="font-semibold text-foreground">{currentPackageData.estimatedDelivery}</p>
+                      <p className="text-sm text-muted-foreground">
+                        Estimated Delivery
+                      </p>
+                      <p className="font-semibold text-foreground">
+                        {currentPackageData.estimatedDelivery}
+                      </p>
                     </div>
                   </div>
 
@@ -142,7 +183,8 @@ export default function PackageDetails({ packageData, onBack }: PackageDetailsPr
                     <div>
                       <p className="text-sm text-muted-foreground">From → To</p>
                       <p className="font-semibold text-foreground">
-                        {currentPackageData.origin} → {currentPackageData.destination}
+                        {currentPackageData.origin} →{" "}
+                        {currentPackageData.destination}
                       </p>
                     </div>
                   </div>
@@ -154,9 +196,12 @@ export default function PackageDetails({ packageData, onBack }: PackageDetailsPr
                       <Package className="w-5 h-5 text-accent" />
                     </div>
                     <div>
-                      <p className="text-sm text-muted-foreground">Package Details</p>
+                      <p className="text-sm text-muted-foreground">
+                        Package Details
+                      </p>
                       <p className="font-semibold text-foreground">
-                        {currentPackageData.weight} • {currentPackageData.dimensions}
+                        {currentPackageData.weight} •{" "}
+                        {currentPackageData.dimensions}
                       </p>
                     </div>
                   </div>
@@ -165,11 +210,15 @@ export default function PackageDetails({ packageData, onBack }: PackageDetailsPr
                     <Button
                       variant={isNotificationEnabled ? "default" : "outline"}
                       size="sm"
-                      onClick={() => setIsNotificationEnabled(!isNotificationEnabled)}
+                      onClick={() =>
+                        setIsNotificationEnabled(!isNotificationEnabled)
+                      }
                       className="flex items-center gap-2"
                     >
                       <Bell className="w-4 h-4" />
-                      {isNotificationEnabled ? "Notifications On" : "Get Notifications"}
+                      {isNotificationEnabled
+                        ? "Notifications On"
+                        : "Get Notifications"}
                     </Button>
                   </div>
                 </div>
@@ -180,7 +229,9 @@ export default function PackageDetails({ packageData, onBack }: PackageDetailsPr
           {/* Tracking Timeline */}
           <Card className="border-border/50 shadow-sm">
             <CardHeader>
-              <CardTitle className="text-xl font-serif font-bold text-foreground">Tracking History</CardTitle>
+              <CardTitle className="text-xl font-serif font-bold text-foreground">
+                Tracking History
+              </CardTitle>
               <CardDescription className="text-muted-foreground">
                 Follow your package journey from origin to destination
               </CardDescription>
@@ -193,13 +244,23 @@ export default function PackageDetails({ packageData, onBack }: PackageDetailsPr
                     <div className="flex flex-col items-center">
                       <div
                         className={`w-8 h-8 rounded-full flex items-center justify-center ${
-                          event.isCompleted ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"
+                          event.isCompleted
+                            ? "bg-primary text-primary-foreground"
+                            : "bg-muted text-muted-foreground"
                         }`}
                       >
-                        {event.isCompleted ? <CheckCircle className="w-4 h-4" /> : <Circle className="w-4 h-4" />}
+                        {event.isCompleted ? (
+                          <CheckCircle className="w-4 h-4" />
+                        ) : (
+                          <Circle className="w-4 h-4" />
+                        )}
                       </div>
                       {index < currentPackageData.events.length - 1 && (
-                        <div className={`w-0.5 h-12 mt-2 ${event.isCompleted ? "bg-primary" : "bg-border"}`} />
+                        <div
+                          className={`w-0.5 h-12 mt-2 ${
+                            event.isCompleted ? "bg-primary" : "bg-border"
+                          }`}
+                        />
                       )}
                     </div>
 
@@ -209,12 +270,16 @@ export default function PackageDetails({ packageData, onBack }: PackageDetailsPr
                         <div>
                           <h4
                             className={`font-semibold ${
-                              event.isCompleted ? "text-foreground" : "text-muted-foreground"
+                              event.isCompleted
+                                ? "text-foreground"
+                                : "text-muted-foreground"
                             }`}
                           >
                             {event.status}
                           </h4>
-                          <p className="text-sm text-muted-foreground mt-1">{event.description}</p>
+                          <p className="text-sm text-muted-foreground mt-1">
+                            {event.description}
+                          </p>
                           <div className="flex items-center gap-4 mt-2 text-xs text-muted-foreground">
                             <span className="flex items-center gap-1">
                               <MapPin className="w-3 h-3" />
@@ -226,7 +291,9 @@ export default function PackageDetails({ packageData, onBack }: PackageDetailsPr
                             </span>
                           </div>
                         </div>
-                        {event.status === "In Transit" && <Truck className="w-5 h-5 text-secondary mt-1" />}
+                        {event.status === "In Transit" && (
+                          <Truck className="w-5 h-5 text-secondary mt-1" />
+                        )}
                       </div>
                     </div>
                   </div>
@@ -242,7 +309,9 @@ export default function PackageDetails({ packageData, onBack }: PackageDetailsPr
                 <MapPin className="w-5 h-5 text-primary" />
                 Live Package Location
               </CardTitle>
-              <CardDescription className="text-muted-foreground">Real-time tracking on interactive map</CardDescription>
+              <CardDescription className="text-muted-foreground">
+                Real-time tracking on interactive map
+              </CardDescription>
             </CardHeader>
             <CardContent>
               <div className="relative bg-gradient-to-br from-emerald-50 to-teal-50 rounded-xl p-8 border border-emerald-200/50">
@@ -252,12 +321,15 @@ export default function PackageDetails({ packageData, onBack }: PackageDetailsPr
                     <Truck className="w-8 h-8 text-white" />
                   </div>
                   <div>
-                    <h3 className="text-lg font-semibold text-foreground mb-2">Package in Transit</h3>
+                    <h3 className="text-lg font-semibold text-foreground mb-2">
+                      Package in Transit
+                    </h3>
                     <p className="text-muted-foreground mb-4">
                       Your package is currently at:{" "}
                       <span className="font-medium text-foreground">
-                        {currentPackageData.events.find((e) => e.isCompleted && e.status !== "Delivered")?.location ||
-                          "Distribution Center"}
+                        {currentPackageData.events.find(
+                          (e) => e.isCompleted && e.status !== "Delivered"
+                        )?.location || "Distribution Center"}
                       </span>
                     </p>
                     <div className="flex items-center justify-center gap-4 text-sm text-muted-foreground">
@@ -284,15 +356,24 @@ export default function PackageDetails({ packageData, onBack }: PackageDetailsPr
           <Card className="border-border/50 shadow-sm">
             <CardContent className="pt-6">
               <div className="flex flex-wrap gap-3">
-                <Button variant="outline" className="flex items-center gap-2 bg-transparent">
+                <Button
+                  variant="outline"
+                  className="flex items-center gap-2 bg-transparent"
+                >
                   <MapPin className="w-4 h-4" />
                   View on Map
                 </Button>
-                <Button variant="outline" className="flex items-center gap-2 bg-transparent">
+                <Button
+                  variant="outline"
+                  className="flex items-center gap-2 bg-transparent"
+                >
                   <Package className="w-4 h-4" />
                   Package Details
                 </Button>
-                <Button variant="outline" className="flex items-center gap-2 bg-transparent">
+                <Button
+                  variant="outline"
+                  className="flex items-center gap-2 bg-transparent"
+                >
                   <Clock className="w-4 h-4" />
                   Delivery Instructions
                 </Button>
@@ -302,5 +383,5 @@ export default function PackageDetails({ packageData, onBack }: PackageDetailsPr
         </div>
       </main>
     </div>
-  )
+  );
 }
