@@ -1,17 +1,17 @@
-"use client"
+"use client";
 
-import UserProfile from "@/components/user-profile"
-import { Button } from "@/components/ui/button"
-import Link from "next/link"
-import { useRouter } from "next/navigation"
-import Navbar from "@/components/navbar"
-import { useAuth, useUser } from "@clerk/nextjs"
+import UserProfile from "@/components/user-profile";
+import { Button } from "@/components/ui/button";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import Navbar from "@/components/navbar";
+import { useAuth, useUser } from "@clerk/nextjs";
 
 export default function ProfilePage() {
-  const { isSignedIn } = useUser()
-  const router = useRouter()
+  const { isSignedIn } = useUser();
+  const router = useRouter();
 
-  if (!isSignedIn) router.push("/")
+  if (!isSignedIn) router.push("/");
 
   return (
     <div className="min-h-screen bg-background">
@@ -20,5 +20,5 @@ export default function ProfilePage() {
         <UserProfile />
       </main>
     </div>
-  )
+  );
 }

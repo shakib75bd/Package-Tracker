@@ -15,64 +15,14 @@ import Navbar from "@/components/navbar"
 import { useState } from "react"
 import { PackageData } from "@/lib/package-service"
 import { useAuth } from "@clerk/nextjs"
+import Chatbot from "@/components/chatbot"
 
 export default function HomePage() {
-  const { getToken } = useAuth()
-  const [pkg, setPkg] = useState<PackageData | null>()
-  const [loading, setLoading] = useState<boolean>(false)
-  const [trackingInput, setTrackingInput] = useState("")
-
-  const fetchPackage = async (trackingNumber: string) => {
-    try {
-      setLoading(true)
-      const endpoint = "http://localhost:8000/graphql"
-      const token = await getToken()
-      const query = `
-          query GetPackageByTrackingNumber($trackingNumber: String!) {
-            getPackageByTrackingNumber(trackingNumber: $trackingNumber) {
-              id
-              trackingNumber
-              destination
-              status
-            }
-          }
-        `
-      const res = await fetch(endpoint, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        },
-        body: JSON.stringify({ query, variables: { trackingNumber } }),
-      })
-
-      const json = await res.json()
-      if (!res.ok || json.errors) {
-        const msg =
-          json.errors?.map((e: any) => e.message).join(", ") || res.statusText
-        throw new Error(msg)
-      }
-
-      setPkg(json.data.getPackageByTrackingNumber ?? null)
-    } catch (err) {
-      console.error("Failed to load packages:", err)
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
-    e.preventDefault()
-    if (!trackingInput.trim()) return
-    fetchPackage(trackingInput.trim())
-  }
-
   return (
     <div className="min-h-screen bg-background">
       {/* Navbar */}
       <div className="sticky top-0 z-50">
         <Navbar />
-        {JSON.stringify(pkg)}
       </div>
 
       <main className="relative">
@@ -94,68 +44,9 @@ export default function HomePage() {
               </p>
             </div>
 
-            <Card className="max-w-3xl mx-auto mb-16 shadow-2xl border-0 bg-white/90 backdrop-blur-xl">
-              <CardHeader className="pb-6">
-                <CardTitle className="text-3xl font-serif font-bold text-foreground flex items-center justify-center gap-3">
-                  <div className="p-2 bg-emerald-100 rounded-lg">
-                    <Search className="w-6 h-6 text-emerald-800" />
-                  </div>
-                  Enter Tracking Number
-                </CardTitle>
-                <CardDescription className="text-muted-foreground text-lg">
-                  Track packages from all major carriers worldwide
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                <form
-                  className="flex flex-col sm:flex-row gap-4"
-                  onSubmit={handleSubmit}
-                >
-                  <Input
-                    type="text"
-                    placeholder="Enter tracking number (e.g., 1Z999AA1234567890)"
-                    className="flex-1 h-14 text-lg bg-white border-emerald-200 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 rounded-xl"
-                    value={trackingInput}
-                    onChange={(e) => setTrackingInput(e.target.value)}
-                  />
-                  <Button
-                    type="submit"
-                    size="lg"
-                    className="h-14 px-10 bg-gradient-to-r from-emerald-800 to-teal-700 hover:from-emerald-700 hover:to-teal-600 hover:shadow-xl text-white font-semibold rounded-xl transition-all duration-200 transform hover:scale-105"
-                  >
-                    <div className="flex items-center gap-3">
-                      <Zap className="w-5 h-5" />
-                      Track Package
-                    </div>
-                  </Button>
-                </form>
-              </CardContent>
-            </Card>
+            <Chatbot />
 
-            <div className="mb-16">
-              <h3 className="text-2xl font-serif font-bold text-foreground mb-6">
-                Quick Access
-              </h3>
-              <div className="flex flex-col sm:flex-row justify-center gap-4">
-                <Link href="/profile">
-                  <Button
-                    variant="outline"
-                    className="bg-white/50 backdrop-blur-sm hover:bg-primary/5 border-border/50 rounded-xl h-12 px-6 transition-all duration-200 hover:shadow-md"
-                  >
-                    <User className="w-5 h-5 mr-3" />
-                    View My Packages
-                  </Button>
-                </Link>
-                <Button
-                  variant="outline"
-                  className="bg-white/50 backdrop-blur-sm hover:bg-secondary/5 border-border/50 rounded-xl h-12 px-6 transition-all duration-200 hover:shadow-md"
-                  disabled
-                >
-                  <Package className="w-5 h-5 mr-3" />
-                  Demo Tracking
-                </Button>
-              </div>
-            </div>
+            <div className="mb-16"></div>
 
             <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
               <Card className="text-center p-8 border-0 bg-white/80 backdrop-blur-sm hover:shadow-xl transition-all duration-300 hover:scale-105 rounded-2xl">

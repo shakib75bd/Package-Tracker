@@ -10,9 +10,15 @@ import {
   Bot,
   User,
   Package,
+  Search,
+  Loader,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { Card, CardDescription, CardHeader, CardTitle } from "./ui/card"
+import { Badge } from "./ui/badge"
+import { useAuth } from "@clerk/nextjs"
+import { PackageData } from "@/lib/package-service"
 
 interface Message {
   id: string
@@ -38,8 +44,13 @@ const PROACTIVE_MESSAGES = [
 ]
 
 export default function Chatbot() {
-  const [isOpen, setIsOpen] = useState(false)
   const [isExpanded, setIsExpanded] = useState(false)
+  const { getToken } = useAuth()
+  const [pkg, setPkg] = useState<PackageData | null>()
+  const [loading, setLoading] = useState<boolean>(false)
+  const [trackingInput, setTrackingInput] = useState("")
+
+
   const [messages, setMessages] = useState<Message[]>([
     {
       id: "1",
@@ -51,17 +62,54 @@ export default function Chatbot() {
   const [inputValue, setInputValue] = useState("")
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
+  const fetchPackage = async (trackingNumber: string) => {
+    try {
+      setLoading(true)
+      const endpoint = "http://localhost:8000/graphql"
+      const token = await getToken()
+      const query = `
+          query GetPackageByTrackingNumber($trackingNumber: String!) {
+            getPackageByTrackingNumber(trackingNumber: $trackingNumber) {
+              id
+              trackingNumber
+              destination
+              status
+            }
+          }
+        `
+      const res = await fetch(endpoint, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({ query, variables: { trackingNumber } }),
+      })
+
+      const json = await res.json()
+      if (!res.ok || json.errors) {
+        const msg =
+          json.errors?.map((e: any) => e.message).join(", ") || res.statusText
+        throw new Error(msg)
+      }
+
+      return json.data.getPackageByTrackingNumber ?? null
+    } catch (err) {
+      console.error("Failed to load packages:", err)
+      return null
+    } finally {
+      setLoading(false)
+    }
   }
 
-  useEffect(() => {
-    scrollToBottom()
-  }, [messages])
+  // useEffect(() => {
+  //   scrollToBottom()
+  // }, [messages])
 
   const detectTrackingNumber = (text: string): string | null => {
     // Common tracking number patterns
     const patterns = [
+      /PKG-[0-9]+/g, // Custom PKG format
       /\b1Z[0-9A-Z]{16}\b/g, // UPS
       /\b[0-9]{12}\b/g, // FedEx 12 digit
       /\b[0-9]{14}\b/g, // FedEx 14 digit
@@ -79,8 +127,8 @@ export default function Chatbot() {
     return null
   }
 
-  const handleSendMessage = (text: string) => {
-    if (!text.trim()) return
+  const handleSendMessage = async (text: string) => {
+    if (!text.trim() || loading) return // Prevent sending while loading
 
     const userMessage: Message = {
       id: Date.now().toString(),
@@ -91,32 +139,160 @@ export default function Chatbot() {
 
     setMessages((prev) => [...prev, userMessage])
     setInputValue("")
+    setLoading(true) // Start loading
+    // wait 2 seconds
+    await new Promise(resolve => setTimeout(resolve, 2000))
 
-    setTimeout(() => {
-      const trackingNumber = detectTrackingNumber(text.trim())
-      const botResponse = generateBotResponse(text.trim(), trackingNumber)
-      const botMessage: Message = {
-        id: (Date.now() + 1).toString(),
-        text: botResponse.text,
-        sender: "bot",
-        timestamp: new Date(),
-        hasRedirectButton: botResponse.hasRedirectButton,
-        trackingNumber: trackingNumber || undefined,
-      }
-      setMessages((prev) => [...prev, botMessage])
-    }, 1000)
+    // Add temporary loading message
+    const loadingMessage: Message = {
+      id: (Date.now() + 0.5).toString(),
+      text: "🔍 Searching for your package...",
+      sender: "bot",
+      timestamp: new Date(),
+    }
+    setMessages((prev) => [...prev, loadingMessage])
+
+    try {
+      console.log("text[handleSendMessage]", text)
+      const trackingNumber = detectTrackingNumber(text)
+      console.log("tracking number [handleSendMessage]", trackingNumber)
+      const res = await generateBotResponse(text, trackingNumber)
+      console.log("showing results [handleSendMessage]", res)
+
+      // Remove loading message and add actual response
+      setMessages((prev) => {
+        const withoutLoading = prev.filter(msg => msg.id !== loadingMessage.id)
+        const actualMessage: Message = {
+          id: (Date.now() + 1).toString(),
+          text: res.text,
+          sender: "bot",
+          timestamp: new Date(),
+          hasRedirectButton: res.hasRedirectButton,
+          trackingNumber: trackingNumber || undefined,
+        }
+        return [...withoutLoading, actualMessage]
+      })
+    } catch (error) {
+      // Handle error and remove loading message
+      setMessages((prev) => {
+        const withoutLoading = prev.filter(msg => msg.id !== loadingMessage.id)
+        const errorMessage: Message = {
+          id: (Date.now() + 1).toString(),
+          text: "Sorry, I encountered an error while processing your request. Please try again.",
+          sender: "bot",
+          timestamp: new Date(),
+        }
+        return [...withoutLoading, errorMessage]
+      })
+      console.error("Error in handleSendMessage:", error)
+    } finally {
+      setLoading(false) // End loading
+    }
   }
 
-  const generateBotResponse = (
+  const generateBotResponse = async (
     userText: string,
     trackingNumber: string | null
-  ): { text: string; hasRedirectButton: boolean } => {
+  ): Promise<{ text: string; hasRedirectButton: boolean }> => {
     const lowerText = userText.toLowerCase()
 
     if (trackingNumber) {
-      return {
-        text: `Great! I detected tracking number: ${trackingNumber}. Would you like me to redirect you to the tracking page to see the full details?`,
-        hasRedirectButton: true,
+      const packageData = await fetchPackage(trackingNumber)
+      console.log("Package data received:", packageData)
+
+      if (packageData) {
+        // Generate response based on package status using available fields
+        let statusMessage = ""
+        let hasButton = true
+
+        switch (packageData.status.toLowerCase()) {
+          case "delivered":
+            statusMessage = `📦 Package Status: DELIVERED
+
+Your package ${packageData.trackingNumber} has been successfully delivered to ${packageData.destination}. 
+
+• Delivery Status: ${packageData.status.toUpperCase()}
+• Final Destination: ${packageData.destination}
+
+Your package has reached its final destination. If you have any concerns about the delivery, please contact the carrier directly.`
+            break
+
+          case "in-transit":
+          case "in transit":
+            statusMessage = `🚛 Package Status: IN TRANSIT
+
+Your package ${packageData.trackingNumber} is currently on its way to ${packageData.destination}.
+
+• Current Status: ${packageData.status.toUpperCase()}
+• Destination: ${packageData.destination}
+
+Your package is actively being transported and should arrive as scheduled.`
+            break
+
+          case "pending":
+            statusMessage = `⏳ Package Status: PENDING
+
+Your package ${packageData.trackingNumber} is currently pending processing.
+
+• Current Status: ${packageData.status.toUpperCase()}
+• Destination: ${packageData.destination}
+
+Your package is in the initial processing stage. It will begin transit shortly.`
+            break
+
+          case "exception":
+            statusMessage = `⚠️ Package Status: EXCEPTION
+
+Your package ${packageData.trackingNumber} has encountered a delivery exception.
+
+• Current Status: ${packageData.status.toUpperCase()}
+• Destination: ${packageData.destination}
+
+There may be a delay or issue with your package. Please contact the carrier for more information about resolving this exception.`
+            break
+
+          case "not-found":
+          case "not found":
+            statusMessage = `❌ Package Status: NOT FOUND
+
+The tracking number ${packageData.trackingNumber} could not be located in the system.
+
+• Status: ${packageData.status.toUpperCase()}
+
+Please verify the tracking number is correct or contact the sender for accurate tracking information.`
+            hasButton = false
+            break
+
+          default:
+            statusMessage = `📋 Package Information
+
+Your package ${packageData.trackingNumber} is being tracked.
+
+• Current Status: ${packageData.status.toUpperCase()}
+• Destination: ${packageData.destination}
+
+For detailed tracking information, please use the Track Package button below.`
+            break
+        }
+
+        return {
+          text: statusMessage,
+          hasRedirectButton: hasButton,
+        }
+      } else {
+        return {
+          text: `❌ Package Not Found
+
+I was unable to locate a package with tracking number: ${trackingNumber}
+
+This could be due to:
+• Incorrect tracking number
+• Package not yet in the system
+• Tracking number from an unsupported carrier
+
+Please verify the tracking number and try again, or contact your sender for assistance.`,
+          hasRedirectButton: false,
+        }
       }
     }
 
@@ -174,89 +350,46 @@ export default function Chatbot() {
     window.dispatchEvent(
       new CustomEvent("trackPackage", { detail: { trackingNumber } })
     )
-    setIsOpen(false)
   }
 
   const handleSuggestionClick = (suggestion: string) => {
     handleSendMessage(suggestion)
   }
-
-  if (!isOpen) {
-    return (
-      <div className="fixed bottom-6 right-6 z-50">
-        <div className="absolute bottom-16 right-0 mb-2 mr-2">
-          <div className="bg-gradient-to-r from-emerald-800 to-teal-700 text-white px-4 py-2 rounded-xl shadow-lg flex items-center gap-2 whitespace-nowrap">
-            <p className="text-sm font-medium">Need help? I can assist!</p>
-            <span className="text-lg">📦</span>
-          </div>
-        </div>
-        <Button
-          onClick={() => setIsOpen(true)}
-          className="h-14 w-14 rounded-full bg-gradient-to-r from-emerald-800 to-teal-700 hover:from-emerald-700 hover:to-teal-600 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-110"
-        >
-          <MessageCircle className="h-6 w-6" />
-        </Button>
-      </div>
-    )
-  }
-
   return (
-    <div
-      className={`fixed bottom-6 right-6 z-50 transition-all duration-300 ${
-        isExpanded ? "inset-4" : "w-80 h-96"
-      }`}
+    <Card
+      className={`w-9/12 mx-auto bottom-6 right-6 z-50 transition-all duration-300}`}
     >
-      <div className="h-full bg-white/80 backdrop-blur-md border border-white/20 rounded-2xl shadow-2xl flex flex-col overflow-hidden">
+      <div className="">
         {/* Header */}
-        <div className="flex items-center justify-between p-4 bg-gradient-to-r from-emerald-800 to-teal-700 text-white">
-          <div className="flex items-center gap-2">
-            <Bot className="h-5 w-5" />
-            <span className="font-semibold">Package Assistant</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setIsExpanded(!isExpanded)}
-              className="text-white hover:bg-white/20 h-8 w-8 p-0"
-            >
-              {isExpanded ? (
-                <Minimize2 className="h-4 w-4" />
-              ) : (
-                <Maximize2 className="h-4 w-4" />
-              )}
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setIsOpen(false)}
-              className="text-white hover:bg-white/20 h-8 w-8 p-0"
-            >
-              <X className="h-4 w-4" />
-            </Button>
-          </div>
-        </div>
+        <CardHeader className="pb-6">
+          <CardTitle className="text-3xl font-serif font-bold text-foreground flex items-center justify-center gap-3">
+            <div className="p-2 bg-emerald-100 rounded-lg">
+              <Search className="w-6 h-6 text-emerald-800" />
+            </div>
+            Enter Tracking Number or ask questions
+          </CardTitle>
+          <CardDescription className="text-muted-foreground text-lg">
+            Track packages from all major carriers worldwide
+          </CardDescription>
+        </CardHeader>
 
         {/* Messages */}
-        <div className="flex-1 overflow-y-auto p-4 space-y-4">
-          {messages.map((message) => (
+        <div className="flex-1 overflow-y-auto px-4 space-y-4">
+          {messages.slice(-1).map((message) => (
             <div key={message.id} className="space-y-2">
               <div
-                className={`flex ${
-                  message.sender === "user" ? "justify-end" : "justify-start"
-                }`}
+                className={`flex ${message.sender === "user" ? "justify-end" : "justify-start"
+                  }`}
               >
                 <div
-                  className={`flex items-start gap-2 max-w-[80%] ${
-                    message.sender === "user" ? "flex-row-reverse" : "flex-row"
-                  }`}
+                  className={`flex items-start gap-2 max-w-[60%] ${message.sender === "user" ? "flex-row-reverse" : "flex-row"
+                    }`}
                 >
                   <div
-                    className={`w-8 h-8 rounded-full flex items-center justify-center ${
-                      message.sender === "user"
-                        ? "bg-gradient-to-r from-emerald-800 to-teal-700 text-white"
-                        : "bg-muted"
-                    }`}
+                    className={`w-8 h-8 rounded-full flex items-center justify-center ${message.sender === "user"
+                      ? "bg-gradient-to-r from-emerald-800 to-teal-700 text-white"
+                      : "bg-white"
+                      }`}
                   >
                     {message.sender === "user" ? (
                       <User className="h-4 w-4" />
@@ -265,13 +398,12 @@ export default function Chatbot() {
                     )}
                   </div>
                   <div
-                    className={`rounded-2xl px-4 py-2 ${
-                      message.sender === "user"
-                        ? "bg-gradient-to-r from-emerald-800 to-teal-700 text-white"
-                        : "bg-muted"
-                    }`}
+                    className={`rounded-xl px-4 py-2 ${message.sender === "user"
+                      ? "bg-gradient-to-r from-emerald-800 to-teal-700 text-white"
+                      : "bg-white"
+                      }`}
                   >
-                    <p className="text-sm">{message.text}</p>
+                    <p className="text-sm text-left">{message.text}</p>
                   </div>
                 </div>
               </div>
@@ -303,12 +435,14 @@ export default function Chatbot() {
               {SUGGESTION_QUERIES.slice(0, 3).map((suggestion) => (
                 <Button
                   key={suggestion}
-                  variant="outline"
+                  variant="ghost"
                   size="sm"
                   onClick={() => handleSuggestionClick(suggestion)}
-                  className="text-xs h-7 px-2 bg-white/50 hover:bg-white/80 border-white/30"
+                  className="text-xs cursor-pointer h-7 px-2 bg-transparent hover:bg-white/80 border-white/30"
                 >
-                  {suggestion}
+                  <Badge className="bg-emerald-700">
+                    {suggestion}
+                  </Badge>
                 </Button>
               ))}
             </div>
@@ -316,27 +450,34 @@ export default function Chatbot() {
         )}
 
         {/* Input */}
-        <div className="p-4 border-t border-white/20">
+        <div className="px-4 border-t border-white/20">
           <div className="flex gap-2">
             <Input
               value={inputValue}
               onChange={(e) => setInputValue(e.target.value)}
-              onKeyPress={(e) =>
-                e.key === "Enter" && handleSendMessage(inputValue)
-              }
-              placeholder="Enter tracking number or ask questions..."
-              className="flex-1 bg-white/50 border-white/30 focus:bg-white/80"
+              onKeyPress={(e) => {
+                if (e.key === "Enter" && !loading) {
+                  handleSendMessage(inputValue)
+                }
+              }}
+              disabled={loading}
+              placeholder={loading ? "Processing your request..." : "Enter tracking number or ask questions..."}
+              className="flex-1 text-sm p-5 bg-white border border-gray-200 rounded-lg! focus:bg-white focus:ring-0!"
             />
             <Button
               onClick={() => handleSendMessage(inputValue)}
-              disabled={!inputValue.trim()}
-              className="bg-gradient-to-r from-emerald-800 to-teal-700 hover:from-emerald-700 hover:to-teal-600"
+              disabled={!inputValue.trim() || loading}
+              className="bg-gradient-to-r from-emerald-800 to-teal-700 border-gray-200 rounded-lg! hover:from-emerald-700 hover:to-teal-600"
             >
-              <Send className="h-4 w-4" />
+              {loading ? (
+                <Loader className="h-4 w-4 animate-spin" />
+              ) : (
+                <Send className="h-4 w-4" />
+              )}
             </Button>
           </div>
         </div>
       </div>
-    </div>
+    </Card>
   )
 }

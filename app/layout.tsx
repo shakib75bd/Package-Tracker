@@ -39,7 +39,6 @@ export default function RootLayout({
       <body className="font-sans">
         <ClerkProvider>
           {children}
-          <Chatbot />
           <Toaster position="top-center" />
         </ClerkProvider>
       </body>
