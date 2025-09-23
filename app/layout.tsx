@@ -38,7 +38,6 @@ export default function RootLayout({
       <body className="font-sans">
         <ClerkProvider>
           {children}
-          <Chatbot />
         </ClerkProvider>
       </body>
     </html>
