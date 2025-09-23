@@ -4,20 +4,26 @@ import { Button } from "@/components/ui/button"
 import { SignedIn, SignedOut, SignInButton, SignOutButton } from "@clerk/nextjs"
 import { User } from "lucide-react"
 import Link from "next/link"
-import { usePathname } from "next/navigation"
+import { useEffect, useState } from "react"
 
+import { usePathname } from "next/navigation"
+import { NotificationDropdown } from "./notification-dropdown"
+import { usePackageSubscription } from "@/hooks/use-package-subscription"
 export default function Navbar() {
   const pathname = usePathname()
+  usePackageSubscription()
+
   return (
     <header className="border-b border-border/50 bg-white/80 backdrop-blur-lg sticky top-0 z-50">
       <div className="container mx-auto px-4 py-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center">
             <h1 className="text-3xl font-serif font-bold bg-gradient-to-r from-emerald-800 via-teal-700 to-emerald-600 bg-clip-text text-transparent tracking-tight">
-              TrackIT
+              TrackIt
             </h1>
           </div>
           <nav className="flex items-center gap-3">
+            <NotificationDropdown />
             <SignedOut>
               <Button
                 variant="outline"

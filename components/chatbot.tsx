@@ -498,17 +498,21 @@ Please verify the tracking number and try again, or contact your sender for assi
                 {messages.slice(-1).map((message) => (
                   <div key={message.id} className="space-y-2">
                     <div
-                      className={`flex ${message.sender === "user" ? "justify-end" : "justify-start"
+                      className={`flex ${message.sender === "user"
+                          ? "justify-end"
+                          : "justify-start"
                         }`}
                     >
                       <div
-                        className={`flex items-start gap-2 max-w-[60%] ${message.sender === "user" ? "flex-row-reverse" : "flex-row"
+                        className={`flex items-start gap-2 max-w-[60%] ${message.sender === "user"
+                            ? "flex-row-reverse"
+                            : "flex-row"
                           }`}
                       >
                         <div
                           className={`w-8 h-8 rounded-full flex items-center justify-center ${message.sender === "user"
-                            ? "bg-gradient-to-r from-emerald-800 to-teal-700 text-white"
-                            : "bg-white"
+                              ? "bg-gradient-to-r from-emerald-800 to-teal-700 text-white"
+                              : "bg-white"
                             }`}
                         >
                           {message.sender === "user" ? (
@@ -519,8 +523,8 @@ Please verify the tracking number and try again, or contact your sender for assi
                         </div>
                         <div
                           className={`rounded-xl px-4 py-2 ${message.sender === "user"
-                            ? "bg-gradient-to-r from-emerald-800 to-teal-700 text-white"
-                            : "bg-white"
+                              ? "bg-gradient-to-r from-emerald-800 to-teal-700 text-white"
+                              : "bg-white"
                             }`}
                         >
                           <p className="text-sm text-left">{message.text}</p>
