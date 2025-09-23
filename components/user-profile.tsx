@@ -211,6 +211,26 @@ export default function UserProfile({
     setSelectedPackage(null)
   }
 
+  // Map status to badge color
+  function getStatusBadgeColor(status: string) {
+    switch (status.toUpperCase()) {
+      case "DELIVERED":
+        return "bg-success/20 text-success border-success/40"
+      case "SHIPPED":
+        return "bg-emerald-800/10 text-emerald-800 border-emerald-800/30"
+      case "PROCESSING":
+        return "bg-blue-100 text-blue-600 border-blue-400"
+      case "PENDING":
+        return "bg-warning/20 text-warning border-warning/40"
+      case "OUT_FOR_DELIVERY":
+        return "bg-orange-100 text-orange-600 border-orange-400"
+      case "CONFIRMED":
+        return "bg-muted text-muted-foreground border-muted-foreground/30"
+      default:
+        return "bg-gray-200 text-gray-700 border-gray-300"
+    }
+  }
+
   return (
     <div className="min-h-screen bg-background">
       <header className="border-b border-border/50 glass sticky top-0 z-10">
@@ -396,30 +416,25 @@ export default function UserProfile({
                   <Card className="text-center p-6 border border-warning/20 bg-warning/5 hover:bg-warning/10 hover:shadow-lg transition-all duration-300 rounded-2xl">
                     <div className="text-3xl font-bold text-warning mb-2">
                       {
-                        packages.filter((p) => {
-                          const s = String(p.status).toUpperCase()
-                          return (
-                            s === "PENDING" ||
-                            s === "CONFIRMED" ||
-                            s === "PROCESSING"
-                          )
-                        }).length
+                        packages.filter(
+                          (p) => String(p.status).toUpperCase() === "PENDING"
+                        ).length
                       }
                     </div>
                     <div className="text-sm text-warning font-medium">
                       Pending
                     </div>
                   </Card>
-                  <Card className="text-center p-6 border border-destructive/20 bg-destructive/5 hover:bg-destructive/10 hover:shadow-lg transition-all duration-300 rounded-2xl">
-                    <div className="text-3xl font-bold text-destructive mb-2">
+                  <Card className="text-center p-6 border border-blue-500/20 bg-blue-50 hover:bg-blue-100 hover:shadow-lg transition-all duration-300 rounded-2xl">
+                    <div className="text-3xl font-bold text-blue-600 mb-2">
                       {
                         packages.filter(
-                          (p) => String(p.status).toUpperCase() === "EXCEPTION"
+                          (p) => String(p.status).toUpperCase() === "PROCESSING"
                         ).length
                       }
                     </div>
-                    <div className="text-sm text-destructive font-medium">
-                      Issues
+                    <div className="text-sm text-blue-600 font-medium">
+                      Processing
                     </div>
                   </Card>
                 </div>
@@ -496,8 +511,9 @@ export default function UserProfile({
                                       {pkg.trackingNumber} • {pkg.destination}
                                     </h4>
                                     <Badge
-                                      variant="secondary"
-                                      className="uppercase"
+                                      className={`uppercase border ${getStatusBadgeColor(
+                                        pkg.status
+                                      )}`}
                                     >
                                       {String(pkg.status)}
                                     </Badge>
