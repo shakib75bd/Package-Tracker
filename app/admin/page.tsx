@@ -22,6 +22,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import { toast } from "sonner"
 
 export default function AdminPage() {
   const { userId, getToken } = useAuth()
@@ -35,6 +36,9 @@ export default function AdminPage() {
   })
   const [status, setStatus] = useState("")
   const [packageId, setPackageId] = useState("")
+  // Station update state
+  const [stationPackageId, setStationPackageId] = useState("")
+  const [station, setStation] = useState("")
   const [message, setMessage] = useState("")
   const [error, setError] = useState("")
   const [packages, setPackages] = useState<
@@ -50,14 +54,22 @@ export default function AdminPage() {
     }>
   >([])
   const [loadingPkgs, setLoadingPkgs] = useState(false)
+  // Adjust to your server's Station enum values if different
+  const STATION_COORDINATES = {
+    ELENGA: { lat: 24.3167, lng: 89.9167 },
+    SIRAJGONJ: { lat: 24.4539, lng: 89.7 },
+    SHERPUR: { lat: 25.0206, lng: 90.0174 },
+    BOGURA: { lat: 24.8465, lng: 89.3776 },
+    POLASHBARI: { lat: 25.3282, lng: 89.3915 },
+    RANGPUR_HUB: { lat: 25.7439, lng: 89.2752 },
+  } as const
+  const STATION_OPTIONS = Object.keys(STATION_COORDINATES) as Array<
+    keyof typeof STATION_COORDINATES
+  >
 
   function handleChange(e: React.ChangeEvent<HTMLInputElement>) {
     setForm({ ...form, [e.target.name]: e.target.value })
   }
-
-  useEffect(() => {
-    console.log(form)
-  }, [form])
 
   async function fetchPackages() {
     setError("")
@@ -114,6 +126,7 @@ export default function AdminPage() {
         userId: $userId
       ) {
         id
+        trackingNumber
       }
     }`
 
@@ -132,6 +145,11 @@ export default function AdminPage() {
         throw new Error(msg)
       }
       setMessage(`Created package ${json.data.createPackage.id}`)
+
+      toast.success("Package has been created", {
+        description: `Package with tracking number: ${json.data.createPackage.trackingNumber} created successfully!`,
+      })
+
       setForm({ sender: "", receiver: "", destination: "", userId: "" })
     } catch (err: any) {
       setError(err.message || "Failed to create package")
@@ -169,10 +187,58 @@ export default function AdminPage() {
       setMessage(
         `Updated ${json.data.updatePackageStatus.id} to ${json.data.updatePackageStatus.status}`
       )
+
+      toast.success("Package Status Updated", {
+        description: `Package with tracking number: ${json.data.createPackage.trackingNumber} updated to status: ${status}`,
+      })
       setPackageId("")
       setStatus("")
     } catch (err: any) {
       setError(err.message || "Failed to update package status")
+    }
+  }
+
+  async function handleUpdateStation(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault()
+    setError("")
+    setMessage("")
+    if (!stationPackageId || !station) {
+      setError("Package ID and Station are required")
+      return
+    }
+    try {
+      const endpoint = "http://localhost:8000/graphql"
+      const token = await getToken()
+      const query = `mutation UpdateStation($id: String!, $station: Station!) {\n        updatePackageStation(id: $id, station: $station) { id trackingNumber station coordinates { lat lng } }\n      }`
+      const res = await fetch(endpoint, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({
+          query,
+          variables: { id: stationPackageId, station },
+        }),
+      })
+      const json = await res.json()
+      if (!res.ok || json.errors) {
+        const msg =
+          json.errors?.map((e: any) => e.message).join(", ") || res.statusText
+        throw new Error(msg)
+      }
+      const updated = json.data.updatePackageStation
+      console.log(updated)
+
+      toast.success("Station Updated", {
+        description: `Package with tracking number: ${updated.trackingNumber} has arrived at ${station}`,
+      })
+      setStationPackageId("")
+      setStation("")
+      // Optionally refresh list
+      fetchPackages().catch(() => {})
+    } catch (err: any) {
+      setError(err.message || "Failed to update station")
     }
   }
 
@@ -252,6 +318,39 @@ export default function AdminPage() {
                     </SelectContent>
                   </Select>
                   <Button type="submit">Update Status</Button>
+                </form>
+              </section>
+
+              <section className="mb-12">
+                <h2 className="text-2xl font-semibold mb-4">
+                  Update Package Station
+                </h2>
+                <form
+                  className="space-y-4 max-w-lg"
+                  onSubmit={handleUpdateStation}
+                >
+                  <Input
+                    name="stationPackageId"
+                    placeholder="Package ID"
+                    value={stationPackageId}
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                      setStationPackageId(e.target.value)
+                    }
+                    required
+                  />
+                  <Select value={station} onValueChange={setStation}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select station" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {STATION_OPTIONS.map((opt) => (
+                        <SelectItem key={opt} value={opt}>
+                          {opt}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <Button type="submit">Update Station</Button>
                 </form>
               </section>
 
