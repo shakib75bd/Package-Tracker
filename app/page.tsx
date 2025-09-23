@@ -12,13 +12,67 @@ import {
 import { Package, Search, Truck, MapPin, User, Zap } from "lucide-react"
 import Link from "next/link"
 import Navbar from "@/components/navbar"
+import { useState } from "react"
+import { PackageData } from "@/lib/package-service"
+import { useAuth } from "@clerk/nextjs"
 
 export default function HomePage() {
+  const { getToken } = useAuth()
+  const [pkg, setPkg] = useState<PackageData | null>()
+  const [loading, setLoading] = useState<boolean>(false)
+  const [trackingInput, setTrackingInput] = useState("")
+
+  const fetchPackage = async (trackingNumber: string) => {
+    try {
+      setLoading(true)
+      const endpoint = "http://localhost:8000/graphql"
+      const token = await getToken()
+      const query = `
+          query GetPackageByTrackingNumber($trackingNumber: String!) {
+            getPackageByTrackingNumber(trackingNumber: $trackingNumber) {
+              id
+              trackingNumber
+              destination
+              status
+            }
+          }
+        `
+      const res = await fetch(endpoint, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({ query, variables: { trackingNumber } }),
+      })
+
+      const json = await res.json()
+      if (!res.ok || json.errors) {
+        const msg =
+          json.errors?.map((e: any) => e.message).join(", ") || res.statusText
+        throw new Error(msg)
+      }
+
+      setPkg(json.data.getPackageByTrackingNumber ?? null)
+    } catch (err) {
+      console.error("Failed to load packages:", err)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault()
+    if (!trackingInput.trim()) return
+    fetchPackage(trackingInput.trim())
+  }
+
   return (
     <div className="min-h-screen bg-background">
       {/* Navbar */}
       <div className="sticky top-0 z-50">
         <Navbar />
+        {JSON.stringify(pkg)}
       </div>
 
       <main className="relative">
@@ -53,17 +107,20 @@ export default function HomePage() {
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
-                <form className="flex flex-col sm:flex-row gap-4">
+                <form
+                  className="flex flex-col sm:flex-row gap-4"
+                  onSubmit={handleSubmit}
+                >
                   <Input
                     type="text"
                     placeholder="Enter tracking number (e.g., 1Z999AA1234567890)"
                     className="flex-1 h-14 text-lg bg-white border-emerald-200 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 rounded-xl"
-                    disabled
+                    value={trackingInput}
+                    onChange={(e) => setTrackingInput(e.target.value)}
                   />
                   <Button
                     type="submit"
                     size="lg"
-                    disabled
                     className="h-14 px-10 bg-gradient-to-r from-emerald-800 to-teal-700 hover:from-emerald-700 hover:to-teal-600 hover:shadow-xl text-white font-semibold rounded-xl transition-all duration-200 transform hover:scale-105"
                   >
                     <div className="flex items-center gap-3">

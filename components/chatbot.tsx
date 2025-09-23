@@ -1,7 +1,16 @@
 "use client"
 
 import { useState, useRef, useEffect } from "react"
-import { MessageCircle, X, Maximize2, Minimize2, Send, Bot, User, Package } from "lucide-react"
+import {
+  MessageCircle,
+  X,
+  Maximize2,
+  Minimize2,
+  Send,
+  Bot,
+  User,
+  Package,
+} from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 
@@ -19,8 +28,6 @@ const SUGGESTION_QUERIES = [
   "Where is my order?",
   "Delivery status update",
   "Package delivery time",
-  "Lost package help",
-  "Change delivery address",
 ]
 
 const PROACTIVE_MESSAGES = [
@@ -102,7 +109,7 @@ export default function Chatbot() {
 
   const generateBotResponse = (
     userText: string,
-    trackingNumber: string | null,
+    trackingNumber: string | null
   ): { text: string; hasRedirectButton: boolean } => {
     const lowerText = userText.toLowerCase()
 
@@ -164,7 +171,9 @@ export default function Chatbot() {
   const handleRedirectToTracking = (trackingNumber: string) => {
     // This would typically use router.push or window.location
     // For now, we'll simulate the redirect by dispatching a custom event
-    window.dispatchEvent(new CustomEvent("trackPackage", { detail: { trackingNumber } }))
+    window.dispatchEvent(
+      new CustomEvent("trackPackage", { detail: { trackingNumber } })
+    )
     setIsOpen(false)
   }
 
@@ -192,7 +201,11 @@ export default function Chatbot() {
   }
 
   return (
-    <div className={`fixed bottom-6 right-6 z-50 transition-all duration-300 ${isExpanded ? "inset-4" : "w-80 h-96"}`}>
+    <div
+      className={`fixed bottom-6 right-6 z-50 transition-all duration-300 ${
+        isExpanded ? "inset-4" : "w-80 h-96"
+      }`}
+    >
       <div className="h-full bg-white/80 backdrop-blur-md border border-white/20 rounded-2xl shadow-2xl flex flex-col overflow-hidden">
         {/* Header */}
         <div className="flex items-center justify-between p-4 bg-gradient-to-r from-emerald-800 to-teal-700 text-white">
@@ -207,7 +220,11 @@ export default function Chatbot() {
               onClick={() => setIsExpanded(!isExpanded)}
               className="text-white hover:bg-white/20 h-8 w-8 p-0"
             >
-              {isExpanded ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
+              {isExpanded ? (
+                <Minimize2 className="h-4 w-4" />
+              ) : (
+                <Maximize2 className="h-4 w-4" />
+              )}
             </Button>
             <Button
               variant="ghost"
@@ -224,7 +241,11 @@ export default function Chatbot() {
         <div className="flex-1 overflow-y-auto p-4 space-y-4">
           {messages.map((message) => (
             <div key={message.id} className="space-y-2">
-              <div className={`flex ${message.sender === "user" ? "justify-end" : "justify-start"}`}>
+              <div
+                className={`flex ${
+                  message.sender === "user" ? "justify-end" : "justify-start"
+                }`}
+              >
                 <div
                   className={`flex items-start gap-2 max-w-[80%] ${
                     message.sender === "user" ? "flex-row-reverse" : "flex-row"
@@ -237,7 +258,11 @@ export default function Chatbot() {
                         : "bg-muted"
                     }`}
                   >
-                    {message.sender === "user" ? <User className="h-4 w-4" /> : <Bot className="h-4 w-4" />}
+                    {message.sender === "user" ? (
+                      <User className="h-4 w-4" />
+                    ) : (
+                      <Bot className="h-4 w-4" />
+                    )}
                   </div>
                   <div
                     className={`rounded-2xl px-4 py-2 ${
@@ -253,7 +278,9 @@ export default function Chatbot() {
               {message.hasRedirectButton && message.trackingNumber && (
                 <div className="flex justify-start">
                   <Button
-                    onClick={() => handleRedirectToTracking(message.trackingNumber!)}
+                    onClick={() =>
+                      handleRedirectToTracking(message.trackingNumber!)
+                    }
                     className="ml-10 bg-gradient-to-r from-emerald-700 to-teal-600 hover:from-emerald-600 hover:to-teal-500 text-white text-xs px-3 py-1 h-8"
                   >
                     <Package className="h-3 w-3 mr-1" />
@@ -269,7 +296,9 @@ export default function Chatbot() {
         {/* Suggestions */}
         {messages.length === 1 && (
           <div className="px-4 pb-2">
-            <p className="text-xs text-muted-foreground mb-2">Quick suggestions:</p>
+            <p className="text-xs text-muted-foreground mb-2">
+              Quick suggestions:
+            </p>
             <div className="flex flex-wrap gap-1">
               {SUGGESTION_QUERIES.slice(0, 3).map((suggestion) => (
                 <Button
@@ -292,7 +321,9 @@ export default function Chatbot() {
             <Input
               value={inputValue}
               onChange={(e) => setInputValue(e.target.value)}
-              onKeyPress={(e) => e.key === "Enter" && handleSendMessage(inputValue)}
+              onKeyPress={(e) =>
+                e.key === "Enter" && handleSendMessage(inputValue)
+              }
               placeholder="Enter tracking number or ask questions..."
               className="flex-1 bg-white/50 border-white/30 focus:bg-white/80"
             />
