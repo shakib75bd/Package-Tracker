@@ -19,6 +19,9 @@ import { Card, CardDescription, CardHeader, CardTitle } from "./ui/card"
 import { Badge } from "./ui/badge"
 import { useAuth } from "@clerk/nextjs"
 import { PackageData } from "@/lib/package-service"
+import { useRouter } from "next/navigation"
+import { NavigateOptions } from "next/dist/shared/lib/app-router-context.shared-runtime"
+
 
 interface Message {
   id: string
@@ -49,6 +52,7 @@ export default function Chatbot() {
   const [pkg, setPkg] = useState<PackageData | null>()
   const [loading, setLoading] = useState<boolean>(false)
   const [trackingInput, setTrackingInput] = useState("")
+  const router = useRouter()
 
   const [messages, setMessages] = useState<Message[]>([
     {
@@ -354,11 +358,8 @@ Please verify the tracking number and try again, or contact your sender for assi
   }
 
   const handleRedirectToTracking = (trackingNumber: string) => {
-    // This would typically use router.push or window.location
-    // For now, we'll simulate the redirect by dispatching a custom event
-    window.dispatchEvent(
-      new CustomEvent("trackPackage", { detail: { trackingNumber } })
-    )
+    // Navigate to the details page with the tracking number as a dynamic route parameter
+    router.push(`/details/${trackingNumber}`)
   }
 
   const handleSuggestionClick = (suggestion: string) => {
