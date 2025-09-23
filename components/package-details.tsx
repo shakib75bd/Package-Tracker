@@ -2,9 +2,10 @@
 import React, { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Package, ArrowLeft, Copy, Share2, RefreshCw } from "lucide-react"
+import { Package, ArrowLeft, Copy, Share2, RefreshCw, Check } from "lucide-react"
 import { useAuth } from "@clerk/nextjs"
 import { type PackageData } from "@/lib/package-service"
+import { Timeline, TimelineItem } from "./ui/timeline"
 
 const stationOrder = [
   "ELENGA",
@@ -14,10 +15,16 @@ const stationOrder = [
   "POLASHBARI",
   "RANGPUR_HUB",
 ]
-function getProgressIndex(station: string | undefined) {
-  if (!station) return -1
-  return stationOrder.indexOf(station)
-}
+
+// Define the timeline statuses in order using your enum
+const timelineStatuses = [
+  { key: "PENDING", label: "Order Placed", description: "Package has been created and is awaiting processing" },
+  { key: "CONFIRMED", label: "Confirmed", description: "Package has been confirmed and is ready for processing" },
+  { key: "PROCESSING", label: "Processing", description: "Package is being processed and prepared for shipment" },
+  { key: "SHIPPED", label: "Shipped", description: "Package has been shipped and is in transit" },
+  { key: "OUT_FOR_DELIVERY", label: "Out for Delivery", description: "Package is out for final delivery" },
+  { key: "DELIVERED", label: "Delivered", description: "Package has been successfully delivered" }
+]
 
 interface PackageDetailsProps {
   trackingNumber: string
@@ -50,6 +57,7 @@ export default function PackageDetails({
               sender
               receiver
               destination
+              history { status date }
               status
               station
               coordinates { lat lng }
@@ -74,7 +82,11 @@ export default function PackageDetails({
         setIsLoading(false)
       }
     }
-    if (trackingNumber) fetchPackage(trackingNumber)
+    if (trackingNumber) {
+      fetchPackage(trackingNumber)
+      console.log("Fetching package details for:", trackingNumber)
+      console.log("Fetching package details for:", currentPackageData)
+    }
   }, [trackingNumber, getToken])
 
   const handleRefresh = async () => {
@@ -92,6 +104,7 @@ export default function PackageDetails({
             sender
             receiver
             destination
+            history { status date }
             status
             station
             coordinates { lat lng }
@@ -138,17 +151,6 @@ export default function PackageDetails({
       </div>
     )
   }
-
-  const progressIndex = getProgressIndex(currentPackageData.station)
-
-  // Fake history: just reverse station order for demo
-  const trackingHistory = stationOrder
-    .map((station, i) => ({
-      station,
-      time: `${25 + i} Sep 2025`,
-      status: i === progressIndex ? currentPackageData.status : "Pending",
-    }))
-    .reverse()
 
   return (
     <div className="min-h-screen bg-background">
@@ -264,24 +266,49 @@ export default function PackageDetails({
           </div>
         </div>
 
-        {/* Timeline */}
-        <div className="space-y-6">
-          <h3 className="font-semibold text-lg">Tracking History</h3>
-          <ul className="relative border-l border-muted pl-4">
-            {trackingHistory.map((item, i) => (
-              <li key={i} className="mb-8 ml-2">
-                <div className="absolute -left-[9px] w-4 h-4 rounded-full border-2 border-primary bg-background" />
-                <time className="block text-xs text-muted-foreground">
-                  {item.time}
-                </time>
-                <p className="font-medium">{item.status}</p>
-                <p className="text-sm text-muted-foreground">
-                  at {item.station}
-                </p>
-              </li>
-            ))}
-          </ul>
-        </div>
+        <Timeline size={"sm"}>
+          {timelineStatuses.map((timelineStatus, index) => {
+            // Find the current status index
+            const currentStatusIndex = timelineStatuses.findIndex(
+              status => status.key === currentPackageData.status
+            )
+
+            // Determine if this timeline item should be completed
+            const isCompleted = index <= currentStatusIndex
+            const isCurrent = index === currentStatusIndex
+
+            // Get the actual date from history if available
+            const historyItem = currentPackageData.history?.find(
+              h => h.status === timelineStatus.key
+            )
+
+            // Format date to show just the date part
+            const formatDate = (dateString: string) => {
+              const date = new Date(dateString)
+              return date.toLocaleDateString('en-US', {
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric'
+              })
+            }
+
+            const displayDate = historyItem?.date
+              ? formatDate(historyItem.date)
+              : isCurrent
+                ? formatDate(new Date().toISOString())
+                : ""
+
+            return (
+              <TimelineItem
+                key={timelineStatus.key}
+                date={displayDate}
+                title={timelineStatus.label}
+                description={timelineStatus.description}
+                icon={isCompleted ? <Check /> : undefined}
+              />
+            )
+          })}
+        </Timeline>
       </main>
     </div>
   )
