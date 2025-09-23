@@ -219,8 +219,9 @@ export default function Chatbot() {
           case "delivered":
             statusMessage = `📦 Package Status: DELIVERED
 
-Your package ${packageData.trackingNumber} has been successfully delivered to ${packageData.destination
-              }.
+Your package ${packageData.trackingNumber} has been successfully delivered to ${
+              packageData.destination
+            }.
 
 • Delivery Status: ${packageData.status.toUpperCase()}
 • Final Destination: ${packageData.destination}
@@ -232,8 +233,9 @@ Your package has reached its final destination. If you have any concerns about t
           case "in transit":
             statusMessage = `🚛 Package Status: IN TRANSIT
 
-Your package ${packageData.trackingNumber} is currently on its way to ${packageData.destination
-              }.
+Your package ${packageData.trackingNumber} is currently on its way to ${
+              packageData.destination
+            }.
 
 • Current Status: ${packageData.status.toUpperCase()}
 • Destination: ${packageData.destination}
@@ -267,8 +269,9 @@ There may be a delay or issue with your package. Please contact the carrier for 
           case "not found":
             statusMessage = `❌ Package Status: NOT FOUND
 
-The tracking number ${packageData.trackingNumber
-              } could not be located in the system.
+The tracking number ${
+              packageData.trackingNumber
+            } could not be located in the system.
 
 • Status: ${packageData.status.toUpperCase()}
 
@@ -424,18 +427,25 @@ Please verify the tracking number and try again, or contact your sender for assi
               {messages.slice(-1).map((message) => (
                 <div key={message.id} className="space-y-2">
                   <div
-                    className={`flex ${message.sender === "user" ? "justify-end" : "justify-start"
-                      }`}
+                    className={`flex ${
+                      message.sender === "user"
+                        ? "justify-end"
+                        : "justify-start"
+                    }`}
                   >
                     <div
-                      className={`flex items-start gap-2 max-w-[60%] ${message.sender === "user" ? "flex-row-reverse" : "flex-row"
-                        }`}
+                      className={`flex items-start gap-2 max-w-[60%] ${
+                        message.sender === "user"
+                          ? "flex-row-reverse"
+                          : "flex-row"
+                      }`}
                     >
                       <div
-                        className={`w-8 h-8 rounded-full flex items-center justify-center ${message.sender === "user"
-                          ? "bg-gradient-to-r from-emerald-800 to-teal-700 text-white"
-                          : "bg-white"
-                          }`}
+                        className={`w-8 h-8 rounded-full flex items-center justify-center ${
+                          message.sender === "user"
+                            ? "bg-gradient-to-r from-emerald-800 to-teal-700 text-white"
+                            : "bg-white"
+                        }`}
                       >
                         {message.sender === "user" ? (
                           <User className="h-4 w-4" />
@@ -444,10 +454,11 @@ Please verify the tracking number and try again, or contact your sender for assi
                         )}
                       </div>
                       <div
-                        className={`rounded-xl px-4 py-2 ${message.sender === "user"
-                          ? "bg-gradient-to-r from-emerald-800 to-teal-700 text-white"
-                          : "bg-white"
-                          }`}
+                        className={`rounded-xl px-4 py-2 ${
+                          message.sender === "user"
+                            ? "bg-gradient-to-r from-emerald-800 to-teal-700 text-white"
+                            : "bg-white"
+                        }`}
                       >
                         <p className="text-sm text-left">{message.text}</p>
                       </div>
