@@ -20,29 +20,43 @@ export interface PackageData {
   progress: number
   events: TrackingEvent[]
   lastUpdated: string
+  sender?: string
+  receiver?: string
+  station?: string
+  ownerId?: string
+  createdAt?: string
+  updatedAt?: string
+  coordinates?: { lat: number; lng: number }
 }
 
 // Mock package database
 const mockPackages: Record<string, PackageData> = {
-  "1Z999AA1234567890": {
-    trackingNumber: "1Z999AA1234567890",
+  "PKG-1758191754467": {
+    trackingNumber: "PKG-1758191754467",
     carrier: "UPS",
-    status: "in-transit",
-    estimatedDelivery: "Dec 28, 2024 by 8:00 PM",
+    status: "pending",
+    estimatedDelivery: "Dec 28, 2025 by 8:00 PM",
     origin: "Los Angeles, CA",
-    destination: "New York, NY",
+    destination: "Rangpur",
     weight: "2.5 lbs",
     dimensions: "12 x 8 x 4 inches",
     service: "UPS Ground",
-    progress: 75,
+    progress: 20,
     lastUpdated: "2 hours ago",
+    sender: "MD. Xyz",
+    receiver: "MD. Tarek Jaman Labu",
+    ownerId: "user_32sdd8JyR7lVp1aVzdIKoJiGd51",
+    station: "ELENGA",
+    createdAt: "2025-09-18T10:35:54.468Z",
+    updatedAt: "2025-09-18T10:35:54.468Z",
+    coordinates: { lat: 24.3167, lng: 89.9167 },
     events: [
       {
         id: "1",
         status: "Order Processed",
         description: "Package information received",
         location: "Los Angeles, CA",
-        timestamp: "Dec 24, 2024 at 2:30 PM",
+        timestamp: "Dec 24, 2025 at 2:30 PM",
         isCompleted: true,
       },
       {
@@ -50,7 +64,7 @@ const mockPackages: Record<string, PackageData> = {
         status: "Picked Up",
         description: "Package picked up by carrier",
         location: "Los Angeles, CA",
-        timestamp: "Dec 25, 2024 at 9:15 AM",
+        timestamp: "Dec 25, 2025 at 9:15 AM",
         isCompleted: true,
       },
       {
@@ -58,22 +72,22 @@ const mockPackages: Record<string, PackageData> = {
         status: "In Transit",
         description: "Package is on the way to destination facility",
         location: "Phoenix, AZ",
-        timestamp: "Dec 26, 2024 at 11:45 AM",
+        timestamp: "Dec 26, 2025 at 11:45 AM",
         isCompleted: true,
       },
       {
         id: "4",
         status: "Out for Delivery",
         description: "Package is out for delivery",
-        location: "New York, NY",
-        timestamp: "Dec 28, 2024 at 8:00 AM",
+        location: "Rangpur",
+        timestamp: "Dec 28, 2025 at 8:00 AM",
         isCompleted: false,
       },
       {
         id: "5",
         status: "Delivered",
         description: "Package delivered successfully",
-        location: "New York, NY",
+        location: "Rangpur",
         timestamp: "Expected by 8:00 PM",
         isCompleted: false,
       },
@@ -252,27 +266,61 @@ export class PackageTrackingService {
     return new Promise((resolve) => setTimeout(resolve, ms))
   }
 
-  // Track a package by tracking number
-  async trackPackage(trackingNumber: string): Promise<PackageData | null> {
-    // Simulate API call delay
-    await this.delay(800 + Math.random() * 1200)
-
-    const cleanTrackingNumber = trackingNumber.trim().toUpperCase()
-
-    // Check if package exists in our mock database
-    const packageData = mockPackages[cleanTrackingNumber]
-
-    if (!packageData) {
-      // Return null for not found packages
-      return null
+  // Fetch package by tracking number from GraphQL API
+  async fetchPackageByTrackingNumber(
+    trackingNumber: string
+  ): Promise<PackageData | null> {
+    const cleanTrackingNumber = trackingNumber.trim()
+    const query = `
+      query GetPackage($trackingNumber: String!) {
+        package(trackingNumber: $trackingNumber) {
+          trackingNumber
+          carrier
+          status
+          estimatedDelivery
+          origin
+          destination
+          weight
+          dimensions
+          service
+          progress
+          lastUpdated
+          sender
+          receiver
+          station
+          ownerId
+          createdAt
+          updatedAt
+          coordinates { lat lng }
+          events {
+            id
+            status
+            description
+            location
+            timestamp
+            isCompleted
+          }
+        }
+      }
+    `
+    console.log(
+      "Fetching package data for tracking number:",
+      cleanTrackingNumber
+    )
+    const response = await fetch("/api/graphql", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        query,
+        variables: { trackingNumber: cleanTrackingNumber },
+      }),
+    })
+    const result = await response.json()
+    console.log("GraphQL response:", result)
+    if (result.data && result.data.package) {
+      return result.data.package
     }
-
-    // Simulate occasional API errors (5% chance)
-    if (Math.random() < 0.05) {
-      throw new Error("Tracking service temporarily unavailable. Please try again.")
-    }
-
-    return { ...packageData }
+    return null
   }
 
   // Get all packages for a user (mock user packages)
@@ -282,7 +330,11 @@ export class PackageTrackingService {
   }
 
   // Validate tracking number format
-  validateTrackingNumber(trackingNumber: string): { isValid: boolean; carrier?: string; error?: string } {
+  validateTrackingNumber(trackingNumber: string): {
+    isValid: boolean
+    carrier?: string
+    error?: string
+  } {
     const cleanNumber = trackingNumber.trim()
 
     if (!cleanNumber) {
