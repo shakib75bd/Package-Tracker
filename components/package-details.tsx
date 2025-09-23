@@ -7,15 +7,6 @@ import { useAuth } from "@clerk/nextjs"
 import { type PackageData } from "@/lib/package-service"
 import { Timeline, TimelineItem } from "./ui/timeline"
 
-const stationOrder = [
-  "ELENGA",
-  "SIRAJGONJ",
-  "SHERPUR",
-  "BOGURA",
-  "POLASHBARI",
-  "RANGPUR_HUB",
-]
-
 // Define the timeline statuses in order using your enum
 const timelineStatuses = [
   { key: "PENDING", label: "Order Placed", description: "Package has been created and is awaiting processing" },
@@ -266,7 +257,7 @@ export default function PackageDetails({
           </div>
         </div>
 
-        <Timeline size={"sm"}>
+        <Timeline size={"sm"} className="-translate-x-5 flex items-center justify-center">
           {timelineStatuses.map((timelineStatus, index) => {
             // Find the current status index
             const currentStatusIndex = timelineStatuses.findIndex(
@@ -300,6 +291,7 @@ export default function PackageDetails({
 
             return (
               <TimelineItem
+                color="secondary"
                 key={timelineStatus.key}
                 date={displayDate}
                 title={timelineStatus.label}

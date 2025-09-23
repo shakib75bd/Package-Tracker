@@ -29,9 +29,9 @@ export default function HomePage() {
         {/* Gradient Background */}
         <div className="absolute inset-0 bg-gradient-to-br from-emerald-50 via-teal-50 to-emerald-100 opacity-30"></div>
         <div className="relative container mx-auto px-4 py-20">
-          <div className="max-w-5xl mx-auto text-center">
-            <div className="mb-12">
-              <h2 className="text-6xl md:text-7xl font-serif font-bold text-foreground mb-6 leading-tight">
+          <div className="max-w-5xl space-y-7 mx-auto text-center">
+            <div className="mb-12 space-y-6">
+              <h2 className="text-6xl md:text-7xl font-serif font-bold text-foreground leading-16">
                 Track Your Package
                 <span className="block bg-gradient-to-r from-emerald-800 via-teal-700 to-emerald-600 bg-clip-text text-transparent">
                   Anywhere, Anytime
