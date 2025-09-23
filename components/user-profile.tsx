@@ -268,7 +268,7 @@ export default function UserProfile({
         <div className="max-w-7xl mx-auto">
           {selectedPackage ? (
             <PackageDetails
-              packageData={selectedPackage}
+              trackingNumber={selectedPackage?.trackingNumber}
               onBack={handleBackFromDetails}
             />
           ) : (
