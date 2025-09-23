@@ -51,6 +51,10 @@ export default function Chatbot() {
   const [loading, setLoading] = useState<boolean>(false)
   const [trackingInput, setTrackingInput] = useState("")
   const router = useRouter()
+  const [showDetailsModal, setShowDetailsModal] = useState(false)
+  const [selectedTrackingNumber, setSelectedTrackingNumber] = useState<
+    string | null
+  >(null)
 
   const [messages, setMessages] = useState<Message[]>([
     {
@@ -215,7 +219,7 @@ export default function Chatbot() {
             statusMessage = `📦 Package Status: DELIVERED
 
 Your package ${packageData.trackingNumber} has been successfully delivered to ${packageData.destination
-              }. 
+              }.
 
 • Delivery Status: ${packageData.status.toUpperCase()}
 • Final Destination: ${packageData.destination}
@@ -289,7 +293,7 @@ For detailed tracking information, please use the Track Package button below.`
         }
       } else {
         return {
-          text: `❌ Package Not Found
+          text: `❌ Package Not Found </br>
 
 I was unable to locate a package with tracking number: ${trackingNumber}
 
@@ -353,137 +357,175 @@ Please verify the tracking number and try again, or contact your sender for assi
   }
 
   const handleRedirectToTracking = (trackingNumber: string) => {
-    // Navigate to the details page with the tracking number as a dynamic route parameter
-    router.push(`/details/${trackingNumber}`)
+    setSelectedTrackingNumber(trackingNumber)
+    setShowDetailsModal(true)
   }
 
   const handleSuggestionClick = (suggestion: string) => {
     handleSendMessage(suggestion)
   }
   return (
-    <Card
-      className={`w-9/12 mx-auto bottom-6 right-6 z-50 transition-all duration-300}`}
-    >
-      <div className="">
-        {/* Header */}
-        <CardHeader className="pb-6">
-          <CardTitle className="text-3xl font-serif font-bold text-foreground flex items-center justify-center gap-3">
-            <div className="p-2 bg-emerald-100 rounded-lg">
-              <Search className="w-6 h-6 text-emerald-800" />
-            </div>
-            Enter Tracking Number or ask questions
-          </CardTitle>
-          <CardDescription className="text-muted-foreground text-lg">
-            Track packages from all major carriers worldwide
-          </CardDescription>
-        </CardHeader>
-
-        {/* Messages */}
-        <div className="flex-1 overflow-y-auto px-4 space-y-4">
-          {messages.slice(-1).map((message) => (
-            <div key={message.id} className="space-y-2">
-              <div
-                className={`flex ${message.sender === "user" ? "justify-end" : "justify-start"
-                  }`}
-              >
-                <div
-                  className={`flex items-start gap-2 max-w-[60%] ${message.sender === "user" ? "flex-row-reverse" : "flex-row"
-                    }`}
+    <Card className="w-9/12 mx-auto bottom-6 right-6 z-50 transition-all duration-300}">
+      <div>
+        {/* If a tracking number is selected, show PackageDetails */}
+        {showDetailsModal && selectedTrackingNumber && (
+          <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center">
+            <div className="relative w-full h-full flex items-center justify-center">
+              <div className="absolute top-6 right-8 z-10">
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="rounded-full bg-emerald-700 text-white hover:bg-emerald-800 shadow-lg"
+                  onClick={() => setShowDetailsModal(false)}
+                  aria-label="Close"
                 >
-                  <div
-                    className={`w-8 h-8 rounded-full flex items-center justify-center ${message.sender === "user"
-                        ? "bg-gradient-to-r from-emerald-800 to-teal-700 text-white"
-                        : "bg-white"
-                      }`}
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    className="h-6 w-6"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
                   >
-                    {message.sender === "user" ? (
-                      <User className="h-4 w-4" />
-                    ) : (
-                      <Bot className="h-4 w-4" />
-                    )}
-                  </div>
-                  <div
-                    className={`rounded-xl px-4 py-2 ${message.sender === "user"
-                        ? "bg-gradient-to-r from-emerald-800 to-teal-700 text-white"
-                        : "bg-white"
-                      }`}
-                  >
-                    <p className="text-sm text-left">{message.text}</p>
-                  </div>
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M6 18L18 6M6 6l12 12"
+                    />
+                  </svg>
+                </Button>
+              </div>
+              <div className="w-full h-full flex items-center justify-center">
+                <div className="bg-background rounded-xl shadow-2xl w-full max-w-4xl h-[90vh] overflow-y-auto p-0">
+                  <PackageDetails trackingNumber={selectedTrackingNumber} />
                 </div>
               </div>
-              {message.hasRedirectButton && message.trackingNumber && (
-                <div className="flex justify-start">
-                  <Button
-                    onClick={() =>
-                      handleRedirectToTracking(message.trackingNumber!)
-                    }
-                    className="ml-10 bg-gradient-to-r from-emerald-700 to-teal-600 hover:from-emerald-600 hover:to-teal-500 text-white text-xs px-3 py-1 h-8"
-                  >
-                    <Package className="h-3 w-3 mr-1" />
-                    Track Package
-                  </Button>
-                </div>
-              )}
-            </div>
-          ))}
-          <div ref={messagesEndRef} />
-        </div>
-
-        {/* Suggestions */}
-        {messages.length === 1 && (
-          <div className="px-4 pb-2">
-            <p className="text-xs text-muted-foreground mb-2">
-              Quick suggestions:
-            </p>
-            <div className="flex flex-wrap gap-1">
-              {SUGGESTION_QUERIES.slice(0, 3).map((suggestion) => (
-                <Button
-                  key={suggestion}
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => handleSuggestionClick(suggestion)}
-                  className="text-xs cursor-pointer h-7 px-2 bg-transparent hover:bg-white/80 border-white/30"
-                >
-                  <Badge className="bg-emerald-700">{suggestion}</Badge>
-                </Button>
-              ))}
             </div>
           </div>
         )}
+        {!showDetailsModal && (
+          <>
+            {/* Header */}
+            <CardHeader className="pb-6">
+              <CardTitle className="text-3xl font-serif font-bold text-foreground flex items-center justify-center gap-3">
+                <div className="p-2 bg-emerald-100 rounded-lg">
+                  <Search className="w-6 h-6 text-emerald-800" />
+                </div>
+                Enter Tracking Number or ask questions
+              </CardTitle>
+              <CardDescription className="text-muted-foreground text-lg">
+                Track packages from all major carriers worldwide
+              </CardDescription>
+            </CardHeader>
 
-        {/* Input */}
-        <div className="px-4 border-t border-white/20">
-          <div className="flex gap-2">
-            <Input
-              value={inputValue}
-              onChange={(e) => setInputValue(e.target.value)}
-              onKeyPress={(e) => {
-                if (e.key === "Enter" && !loading) {
-                  handleSendMessage(inputValue)
-                }
-              }}
-              disabled={loading}
-              placeholder={
-                loading
-                  ? "Processing your request..."
-                  : "Enter tracking number or ask questions..."
-              }
-              className="flex-1 text-sm p-5 bg-white border border-gray-200 rounded-lg! focus:bg-white focus:ring-0!"
-            />
-            <Button
-              onClick={() => handleSendMessage(inputValue)}
-              disabled={!inputValue.trim() || loading}
-              className="bg-gradient-to-r from-emerald-800 to-teal-700 border-gray-200 rounded-lg! hover:from-emerald-700 hover:to-teal-600"
-            >
-              {loading ? (
-                <Loader className="h-4 w-4 animate-spin" />
-              ) : (
-                <Send className="h-4 w-4" />
-              )}
-            </Button>
-          </div>
-        </div>
+            {/* Messages */}
+            <div className="flex-1 overflow-y-auto px-4 space-y-4">
+              {messages.slice(-1).map((message) => (
+                <div key={message.id} className="space-y-2">
+                  <div
+                    className={`flex ${message.sender === "user" ? "justify-end" : "justify-start"
+                      }`}
+                  >
+                    <div
+                      className={`flex items-start gap-2 max-w-[60%] ${message.sender === "user" ? "flex-row-reverse" : "flex-row"
+                        }`}
+                    >
+                      <div
+                        className={`w-8 h-8 rounded-full flex items-center justify-center ${message.sender === "user"
+                          ? "bg-gradient-to-r from-emerald-800 to-teal-700 text-white"
+                          : "bg-white"
+                          }`}
+                      >
+                        {message.sender === "user" ? (
+                          <User className="h-4 w-4" />
+                        ) : (
+                          <Bot className="h-4 w-4" />
+                        )}
+                      </div>
+                      <div
+                        className={`rounded-xl px-4 py-2 ${message.sender === "user"
+                          ? "bg-gradient-to-r from-emerald-800 to-teal-700 text-white"
+                          : "bg-white"
+                          }`}
+                      >
+                        <p className="text-sm text-left">{message.text}</p>
+                      </div>
+                    </div>
+                  </div>
+                  {message.hasRedirectButton && message.trackingNumber && (
+                    <div className="flex justify-start">
+                      <Button
+                        onClick={() =>
+                          handleRedirectToTracking(message.trackingNumber!)
+                        }
+                        className="ml-10 bg-gradient-to-r from-emerald-700 to-teal-600 hover:from-emerald-600 hover:to-teal-500 text-white text-xs px-3 py-1 h-8"
+                      >
+                        <Package className="h-3 w-3 mr-1" />
+                        Track Package
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              ))}
+              <div ref={messagesEndRef} />
+            </div>
+
+            {/* Suggestions */}
+            {messages.length === 1 && (
+              <div className="px-4 pb-2">
+                <p className="text-xs text-muted-foreground mb-2">
+                  Quick suggestions:
+                </p>
+                <div className="flex flex-wrap gap-1">
+                  {SUGGESTION_QUERIES.slice(0, 3).map((suggestion) => (
+                    <Button
+                      key={suggestion}
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleSuggestionClick(suggestion)}
+                      className="text-xs cursor-pointer h-7 px-2 bg-transparent hover:bg-white/80 border-white/30"
+                    >
+                      <Badge className="bg-emerald-700">{suggestion}</Badge>
+                    </Button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Input */}
+            <div className="px-4 border-t border-white/20">
+              <div className="flex gap-2">
+                <Input
+                  value={inputValue}
+                  onChange={(e) => setInputValue(e.target.value)}
+                  onKeyPress={(e) => {
+                    if (e.key === "Enter" && !loading) {
+                      handleSendMessage(inputValue)
+                    }
+                  }}
+                  disabled={loading}
+                  placeholder={
+                    loading
+                      ? "Processing your request..."
+                      : "Enter tracking number or ask questions..."
+                  }
+                  className="flex-1 text-sm p-5 bg-white border border-gray-200 rounded-lg! focus:bg-white focus:ring-0!"
+                />
+                <Button
+                  onClick={() => handleSendMessage(inputValue)}
+                  disabled={!inputValue.trim() || loading}
+                  className="bg-gradient-to-r from-emerald-800 to-teal-700 border-gray-200 rounded-lg! hover:from-emerald-700 hover:to-teal-600"
+                >
+                  {loading ? (
+                    <Loader className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Send className="h-4 w-4" />
+                  )}
+                </Button>
+              </div>
+            </div>
+          </>
+        )}
       </div>
     </Card>
   )
