@@ -22,7 +22,6 @@ import { PackageData } from "@/lib/package-service"
 import { useRouter } from "next/navigation"
 import { NavigateOptions } from "next/dist/shared/lib/app-router-context.shared-runtime"
 
-
 interface Message {
   id: string
   text: string

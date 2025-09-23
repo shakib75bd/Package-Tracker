@@ -186,9 +186,7 @@ export default function AdminPage() {
         throw new Error(msg)
       }
 
-      setMessage(
-        `Updated ${json.data.updatePackageStatus.id} to ${json.data.updatePackageStatus.status}`
-      )
+      console.log(json)
 
       toast.success("Package Status Updated", {
         description: `Package with tracking number: ${json.data.updatePackageStatus.trackingNumber} updated to status: ${status}`,
