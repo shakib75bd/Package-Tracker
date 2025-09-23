@@ -32,7 +32,7 @@ export default function AdminPage() {
     sender: "",
     receiver: "",
     destination: "",
-    userId: "",
+    ownerId: "",
   })
   const [status, setStatus] = useState("")
   const [packageId, setPackageId] = useState("")
@@ -118,13 +118,13 @@ export default function AdminPage() {
       $sender: String!
       $receiver: String!
       $destination: String!
-      $userId: String!
+      $ownerId: String!
     ) {
       createPackage(
         sender: $sender
         receiver: $receiver
         destination: $destination
-        userId: $userId
+        ownerId: $ownerId
       ) {
         id
         trackingNumber
@@ -151,7 +151,7 @@ export default function AdminPage() {
         description: `Package with tracking number: ${json.data.createPackage.trackingNumber} created successfully!`,
       })
 
-      setForm({ sender: "", receiver: "", destination: "", userId: "" })
+      setForm({ sender: "", receiver: "", destination: "", ownerId: "" })
     } catch (err: any) {
       setError(err.message || "Failed to create package")
     }
@@ -236,7 +236,7 @@ export default function AdminPage() {
       setStationPackageId("")
       setStation("")
       // Optionally refresh list
-      fetchPackages().catch(() => {})
+      fetchPackages().catch(() => { })
     } catch (err: any) {
       setError(err.message || "Failed to update station")
     }
@@ -275,9 +275,9 @@ export default function AdminPage() {
                     required
                   />
                   <Input
-                    name="userId"
+                    name="ownerId"
                     placeholder="User ID"
-                    value={form.userId}
+                    value={form.ownerId}
                     onChange={handleChange}
                     required
                   />
@@ -363,9 +363,8 @@ export default function AdminPage() {
                     disabled={loadingPkgs}
                   >
                     <RefreshCw
-                      className={`w-4 h-4 mr-2 ${
-                        loadingPkgs ? "animate-spin" : ""
-                      }`}
+                      className={`w-4 h-4 mr-2 ${loadingPkgs ? "animate-spin" : ""
+                        }`}
                     />
                     {loadingPkgs ? "Refreshing" : "Refresh"}
                   </Button>

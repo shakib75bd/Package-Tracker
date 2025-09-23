@@ -47,18 +47,17 @@ export default function Navbar() {
                   </Button>
                 </Link>
               ) : (
-                <div>
+                <div className="flex items-center gap-3">
                   <Button
                     variant="outline"
                     className="text-emerald-800 hover:text-white hover:bg-emerald-800 transition-all duration-200 bg-white border-emerald-200 hover:border-emerald-800 font-medium px-6"
                   >
                     <SignOutButton />
                   </Button>
-
                   <Link href="/profile">
                     <Button
                       variant="ghost"
-                      className="text-emerald-800 hover:text-emerald-900 hover:bg-emerald-50 transition-all duration-200"
+                      className="flex items-center text-emerald-800 hover:text-emerald-900 hover:bg-emerald-50 transition-all duration-200"
                     >
                       <User className="w-4 h-4 mr-2" />
                       Profile

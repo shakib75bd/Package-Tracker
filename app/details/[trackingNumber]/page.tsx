@@ -1,8 +1,9 @@
 'use client'
+import PackageDetails from "@/components/package-details"
 import { useParams } from "next/navigation"
 
-export default function PackageDetails() {
+export default function PackageDetailsPage() {
     const params = useParams()
     const trackingNumber = params.trackingNumber as string
-    return <div className="text-8xl">{trackingNumber}</div>
+    return <PackageDetails trackingNumber={trackingNumber} />
 }
