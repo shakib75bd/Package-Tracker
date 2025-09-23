@@ -169,7 +169,7 @@ export default function AdminPage() {
       const endpoint = "http://localhost:8000/graphql"
       const token = await getToken()
       const query = `mutation updatePackageStatus($id: String!, $status: String!) {
-        updatePackageStatus(id: $id, status: $status) { id status }
+        updatePackageStatus(id: $id, status: $status) { id trackingNumber status }
       }`
       const res = await fetch(endpoint, {
         method: "POST",
@@ -185,12 +185,13 @@ export default function AdminPage() {
           json.errors?.map((e: any) => e.message).join(", ") || res.statusText
         throw new Error(msg)
       }
+
       setMessage(
         `Updated ${json.data.updatePackageStatus.id} to ${json.data.updatePackageStatus.status}`
       )
 
       toast.success("Package Status Updated", {
-        description: `Package with tracking number: ${json.data.createPackage.trackingNumber} updated to status: ${status}`,
+        description: `Package with tracking number: ${json.data.updatePackageStatus.trackingNumber} updated to status: ${status}`,
       })
       setPackageId("")
       setStatus("")

@@ -1,22 +1,22 @@
-"use client";
+"use client"
 
-import { useState, useEffect } from "react";
-import { useAuth } from "@clerk/nextjs";
-import { Button } from "@/components/ui/button";
-import PackageDetails from "@/components/package-details"; // Import the component
+import { useState, useEffect } from "react"
+import { useAuth } from "@clerk/nextjs"
+import { Button } from "@/components/ui/button"
+import PackageDetails from "@/components/package-details" // Import the component
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Switch } from "@/components/ui/switch";
+} from "@/components/ui/card"
+import { Badge } from "@/components/ui/badge"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { Switch } from "@/components/ui/switch"
 import {
   User,
   Package,
@@ -36,18 +36,18 @@ import {
   Download,
   Shield,
   Award,
-} from "lucide-react";
-import type { PackageData } from "@/lib/package-service";
-import { useUser } from "@clerk/nextjs";
+} from "lucide-react"
+import type { PackageData } from "@/lib/package-service"
+import { useUser } from "@clerk/nextjs"
 
 interface UserData {
-  name: string;
-  email: string;
-  phone: string;
-  address: string;
-  memberSince: string;
-  totalPackages: number;
-  avatar?: string;
+  name: string
+  email: string
+  phone: string
+  address: string
+  memberSince: string
+  totalPackages: number
+  avatar?: string
 }
 
 const mockUserData: UserData = {
@@ -58,42 +58,42 @@ const mockUserData: UserData = {
   memberSince: "January 2023",
   totalPackages: 24,
   avatar: "/business-headshot.png",
-};
+}
 
 interface UserProfileProps {
-  onBack?: () => void;
-  onViewPackage?: (trackingNumber: string) => void;
+  onBack?: () => void
+  onViewPackage?: (trackingNumber: string) => void
 }
 
 export default function UserProfile({
   onBack,
   onViewPackage,
 }: UserProfileProps) {
-  const { getToken } = useAuth();
-  const [userData, setUserData] = useState<UserData>(mockUserData);
-  const [packages, setPackages] = useState<PackageData[]>([]);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [isLoadingPackages, setIsLoadingPackages] = useState(true);
+  const { getToken } = useAuth()
+  const [userData, setUserData] = useState<UserData>(mockUserData)
+  const [packages, setPackages] = useState<PackageData[]>([])
+  const [searchQuery, setSearchQuery] = useState("")
+  const [isLoadingPackages, setIsLoadingPackages] = useState(true)
   const [notifications, setNotifications] = useState({
     email: true,
     sms: false,
     push: true,
-  });
+  })
   const [selectedPackage, setSelectedPackage] = useState<PackageData | null>(
     null
-  );
+  )
 
   // Clerk user
-  const { user } = useUser();
-  console.log(user?.fullName);
+  const { user } = useUser()
+  console.log(user?.fullName)
 
   useEffect(() => {
     const loadPackages = async () => {
-      setIsLoadingPackages(true);
+      setIsLoadingPackages(true)
       try {
-        const endpoint = "http://localhost:8000/graphql";
-        const token = await getToken();
-        const query = `query getPackages {   getPackages { id trackingNumber destination status }    }`;
+        const endpoint = "http://localhost:8000/graphql"
+        const token = await getToken()
+        const query = `query getPackages {   getPackages { id trackingNumber destination status }    }`
         const res = await fetch(endpoint, {
           method: "POST",
           headers: {
@@ -101,20 +101,19 @@ export default function UserProfile({
             ...(token ? { Authorization: `Bearer ${token}` } : {}),
           },
           body: JSON.stringify({ query }),
-        });
-        const json = await res.json();
+        })
+        const json = await res.json()
         if (!res.ok || json.errors) {
           const msg =
-            json.errors?.map((e: any) => e.message).join(", ") ||
-            res.statusText;
-          throw new Error(msg);
+            json.errors?.map((e: any) => e.message).join(", ") || res.statusText
+          throw new Error(msg)
         }
         const apiPkgs: Array<{
-          id: string;
-          trackingNumber: string;
-          destination: string;
-          status: string;
-        }> = json.data?.getPackages || [];
+          id: string
+          trackingNumber: string
+          destination: string
+          status: string
+        }> = json.data?.getPackages || []
 
         const mapped: PackageData[] = apiPkgs.map((p) => ({
           trackingNumber: p.trackingNumber,
@@ -130,35 +129,35 @@ export default function UserProfile({
           progress: 0,
           events: [],
           lastUpdated: "-",
-        }));
+        }))
 
-        setPackages(mapped);
-        setUserData((prev) => ({ ...prev, totalPackages: mapped.length }));
+        setPackages(mapped)
+        setUserData((prev) => ({ ...prev, totalPackages: mapped.length }))
       } catch (error) {
-        console.error("Failed to load packages:", error);
+        console.error("Failed to load packages:", error)
       } finally {
-        setIsLoadingPackages(false);
+        setIsLoadingPackages(false)
       }
-    };
+    }
 
-    loadPackages();
-  }, [getToken]);
+    loadPackages()
+  }, [getToken])
 
   const filteredPackages = packages.filter((pkg) => {
-    const q = searchQuery.toLowerCase();
+    const q = searchQuery.toLowerCase()
     return (
       pkg.trackingNumber.toLowerCase().includes(q) ||
       pkg.destination.toLowerCase().includes(q) ||
       pkg.status.toLowerCase().includes(q)
-    );
-  });
+    )
+  })
 
   const refreshPackages = async () => {
-    setIsLoadingPackages(true);
+    setIsLoadingPackages(true)
     try {
-      const endpoint = "http://localhost:8000/graphql";
-      const token = await getToken();
-      const query = `query getPackages {\n        getPackages { id trackingNumber destination status }\n      }`;
+      const endpoint = "http://localhost:8000/graphql"
+      const token = await getToken()
+      const query = `query getPackages {\n        getPackages { id trackingNumber destination status }\n      }`
       const res = await fetch(endpoint, {
         method: "POST",
         headers: {
@@ -166,19 +165,19 @@ export default function UserProfile({
           ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
         body: JSON.stringify({ query }),
-      });
-      const json = await res.json();
+      })
+      const json = await res.json()
       if (!res.ok || json.errors) {
         const msg =
-          json.errors?.map((e: any) => e.message).join(", ") || res.statusText;
-        throw new Error(msg);
+          json.errors?.map((e: any) => e.message).join(", ") || res.statusText
+        throw new Error(msg)
       }
       const apiPkgs: Array<{
-        id: string;
-        trackingNumber: string;
-        destination: string;
-        status: string;
-      }> = json.data?.getPackages || [];
+        id: string
+        trackingNumber: string
+        destination: string
+        status: string
+      }> = json.data?.getPackages || []
       const mapped: PackageData[] = apiPkgs.map((p) => ({
         trackingNumber: p.trackingNumber,
         carrier: "Unknown",
@@ -192,25 +191,45 @@ export default function UserProfile({
         progress: 0,
         events: [],
         lastUpdated: "-",
-      }));
-      setPackages(mapped);
+      }))
+      setPackages(mapped)
     } catch (error) {
-      console.error("Failed to refresh packages:", error);
+      console.error("Failed to refresh packages:", error)
     } finally {
-      setIsLoadingPackages(false);
+      setIsLoadingPackages(false)
     }
-  };
+  }
 
   // Handler for viewing a package
   const handleViewPackage = (trackingNumber: string) => {
-    const pkg = packages.find((p) => p.trackingNumber === trackingNumber);
-    if (pkg) setSelectedPackage(pkg);
-  };
+    const pkg = packages.find((p) => p.trackingNumber === trackingNumber)
+    if (pkg) setSelectedPackage(pkg)
+  }
 
   // Handler for going back to the package list
   const handleBackFromDetails = () => {
-    setSelectedPackage(null);
-  };
+    setSelectedPackage(null)
+  }
+
+  // Map status to badge color
+  function getStatusBadgeColor(status: string) {
+    switch (status.toUpperCase()) {
+      case "DELIVERED":
+        return "bg-success/20 text-success border-success/40"
+      case "SHIPPED":
+        return "bg-emerald-800/10 text-emerald-800 border-emerald-800/30"
+      case "PROCESSING":
+        return "bg-blue-100 text-blue-600 border-blue-400"
+      case "PENDING":
+        return "bg-warning/20 text-warning border-warning/40"
+      case "OUT_FOR_DELIVERY":
+        return "bg-orange-100 text-orange-600 border-orange-400"
+      case "CONFIRMED":
+        return "bg-muted text-muted-foreground border-muted-foreground/30"
+      default:
+        return "bg-gray-200 text-gray-700 border-gray-300"
+    }
+  }
 
   return (
     <div className="min-h-screen bg-background">
@@ -385,8 +404,8 @@ export default function UserProfile({
                     <div className="text-3xl font-bold text-emerald-800 mb-2">
                       {
                         packages.filter((p) => {
-                          const s = String(p.status).toUpperCase();
-                          return s === "SHIPPED" || s === "OUT_FOR_DELIVERY";
+                          const s = String(p.status).toUpperCase()
+                          return s === "SHIPPED" || s === "OUT_FOR_DELIVERY"
                         }).length
                       }
                     </div>
@@ -397,30 +416,25 @@ export default function UserProfile({
                   <Card className="text-center p-6 border border-warning/20 bg-warning/5 hover:bg-warning/10 hover:shadow-lg transition-all duration-300 rounded-2xl">
                     <div className="text-3xl font-bold text-warning mb-2">
                       {
-                        packages.filter((p) => {
-                          const s = String(p.status).toUpperCase();
-                          return (
-                            s === "PENDING" ||
-                            s === "CONFIRMED" ||
-                            s === "PROCESSING"
-                          );
-                        }).length
+                        packages.filter(
+                          (p) => String(p.status).toUpperCase() === "PENDING"
+                        ).length
                       }
                     </div>
                     <div className="text-sm text-warning font-medium">
                       Pending
                     </div>
                   </Card>
-                  <Card className="text-center p-6 border border-destructive/20 bg-destructive/5 hover:bg-destructive/10 hover:shadow-lg transition-all duration-300 rounded-2xl">
-                    <div className="text-3xl font-bold text-destructive mb-2">
+                  <Card className="text-center p-6 border border-blue-500/20 bg-blue-50 hover:bg-blue-100 hover:shadow-lg transition-all duration-300 rounded-2xl">
+                    <div className="text-3xl font-bold text-blue-600 mb-2">
                       {
                         packages.filter(
-                          (p) => String(p.status).toUpperCase() === "EXCEPTION"
+                          (p) => String(p.status).toUpperCase() === "PROCESSING"
                         ).length
                       }
                     </div>
-                    <div className="text-sm text-destructive font-medium">
-                      Issues
+                    <div className="text-sm text-blue-600 font-medium">
+                      Processing
                     </div>
                   </Card>
                 </div>
@@ -497,8 +511,9 @@ export default function UserProfile({
                                       {pkg.trackingNumber} • {pkg.destination}
                                     </h4>
                                     <Badge
-                                      variant="secondary"
-                                      className="uppercase"
+                                      className={`uppercase border ${getStatusBadgeColor(
+                                        pkg.status
+                                      )}`}
                                     >
                                       {String(pkg.status)}
                                     </Badge>
@@ -681,5 +696,5 @@ export default function UserProfile({
         </div>
       </main>
     </div>
-  );
+  )
 }
