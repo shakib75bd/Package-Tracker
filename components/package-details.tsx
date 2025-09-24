@@ -6,6 +6,8 @@ import { Package, ArrowLeft, Copy, Share2, RefreshCw, Check } from "lucide-react
 import { useAuth } from "@clerk/nextjs"
 import { type PackageData } from "@/lib/package-service"
 import { Timeline, TimelineItem } from "./ui/timeline"
+import Navbar from "./navbar"
+import { cn } from "@/lib/utils"
 
 // Define the timeline statuses in order using your enum
 const timelineStatuses = [
@@ -144,9 +146,9 @@ export default function PackageDetails({
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-transparent">
       {/* Header */}
-      <header className="border-b border-border bg-card/70 backdrop-blur-md sticky top-0 z-10">
+      {/* <header className="border-b border-border bg-card/70 backdrop-blur-md sticky top-0 z-10">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center gap-4">
             {onBack && (
@@ -196,11 +198,12 @@ export default function PackageDetails({
             </Button>
           </div>
         </div>
-      </header>
+      </header> */}
+      <Navbar />
 
       <main className="container mx-auto px-4 py-8 max-w-2xl">
         {/* Package Details Card */}
-        <div className="bg-card rounded-xl shadow p-6 mb-8">
+        <div className="bg-white rounded-xl p-6 mb-8">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <div className="mb-2">
@@ -295,6 +298,7 @@ export default function PackageDetails({
                 key={timelineStatus.key}
                 date={displayDate}
                 title={timelineStatus.label}
+                className={cn(!isCompleted && "grayscale blur-xs")}
                 description={timelineStatus.description}
                 icon={isCompleted ? <Check /> : undefined}
               />

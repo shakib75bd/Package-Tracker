@@ -58,6 +58,23 @@ const MessageSkeleton = () => (
   </div>
 )
 
+// Add this helper function to parse markdown-style bold text
+const parseMessageText = (text: string) => {
+  const parts = text.split(/(\*\*.*?\*\*)/g)
+
+  return parts.map((part, index) => {
+    if (part.startsWith("**") && part.endsWith("**")) {
+      const boldText = part.slice(2, -2) // Remove ** from both ends
+      return (
+        <strong key={index} className="font-semibold text-emerald-800">
+          {boldText}
+        </strong>
+      )
+    }
+    return part
+  })
+}
+
 export default function Chatbot() {
   const [isExpanded, setIsExpanded] = useState(false)
   const { getToken } = useAuth()
@@ -224,80 +241,67 @@ export default function Chatbot() {
       console.log("Package data received:", packageData)
 
       if (packageData) {
-        // Generate response based on package status using available fields
         let statusMessage = ""
         let hasButton = true
 
         switch (packageData.status.toLowerCase()) {
           case "delivered":
-            statusMessage = `📦 Package Status: DELIVERED
+            statusMessage = `Great news! Your package **${packageData.trackingNumber}** has been successfully delivered to **${packageData.destination}**. 
 
-Your package ${packageData.trackingNumber} has been successfully delivered to ${packageData.destination
-              }.
-
-• Delivery Status: ${packageData.status.toUpperCase()}
-• Final Destination: ${packageData.destination}
-
-Your package has reached its final destination. If you have any concerns about the delivery, please contact the carrier directly.`
+The delivery is now complete. If you have any questions about the delivery or didn't receive your package, please contact the carrier directly for assistance.`
             break
 
+          case "shipped":
           case "in-transit":
           case "in transit":
-            statusMessage = `🚛 Package Status: IN TRANSIT
+            statusMessage = `Your package **${packageData.trackingNumber}** is currently on its way to **${packageData.destination}**. 
 
-Your package ${packageData.trackingNumber} is currently on its way to ${packageData.destination
-              }.
+It's actively being transported and should arrive as scheduled. You can track its progress for real-time updates.`
+            break
 
-• Current Status: ${packageData.status.toUpperCase()}
-• Destination: ${packageData.destination}
+          case "processing":
+            statusMessage = `Your package **${packageData.trackingNumber}** is being processed and prepared for shipment to **${packageData.destination}**. 
 
-Your package is actively being transported and should arrive as scheduled.`
+It will be shipped soon and you'll receive updates once it's on its way.`
+            break
+
+          case "confirmed":
+            statusMessage = `Your package **${packageData.trackingNumber}** has been confirmed and is ready for processing. 
+
+Destination: **${packageData.destination}**. The package will move to the next stage shortly.`
             break
 
           case "pending":
-            statusMessage = `⏳ Package Status: PENDING
+            statusMessage = `Your package **${packageData.trackingNumber}** is currently pending and awaiting processing. 
 
-Your package ${packageData.trackingNumber} is currently pending processing.
+Destination: **${packageData.destination}**. It's in the initial stage and will begin processing soon.`
+            break
 
-• Current Status: ${packageData.status.toUpperCase()}
-• Destination: ${packageData.destination}
+          case "out_for_delivery":
+          case "out-for-delivery":
+            statusMessage = `Exciting! Your package **${packageData.trackingNumber}** is out for delivery to **${packageData.destination}**. 
 
-Your package is in the initial processing stage. It will begin transit shortly.`
+It should arrive today. Make sure someone is available to receive it.`
             break
 
           case "exception":
-            statusMessage = `⚠️ Package Status: EXCEPTION
+            statusMessage = `There's been a delivery exception with your package **${packageData.trackingNumber}** heading to **${packageData.destination}**. 
 
-Your package ${packageData.trackingNumber} has encountered a delivery exception.
-
-• Current Status: ${packageData.status.toUpperCase()}
-• Destination: ${packageData.destination}
-
-There may be a delay or issue with your package. Please contact the carrier for more information about resolving this exception.`
+This could be due to an incorrect address, delivery attempt failure, or weather delays. Please contact the carrier to resolve this issue.`
             break
 
           case "not-found":
           case "not found":
-            statusMessage = `❌ Package Status: NOT FOUND
+            statusMessage = `I couldn't locate package **${packageData.trackingNumber}** in the system. 
 
-The tracking number ${packageData.trackingNumber
-              } could not be located in the system.
-
-• Status: ${packageData.status.toUpperCase()}
-
-Please verify the tracking number is correct or contact the sender for accurate tracking information.`
+Please double-check the tracking number or contact your sender for the correct information.`
             hasButton = false
             break
 
           default:
-            statusMessage = `📋 Package Information
+            statusMessage = `I found your package **${packageData.trackingNumber}** with status **${packageData.status.toUpperCase()}**. 
 
-Your package ${packageData.trackingNumber} is being tracked.
-
-• Current Status: ${packageData.status.toUpperCase()}
-• Destination: ${packageData.destination}
-
-For detailed tracking information, please use the Track Package button below.`
+It's being tracked and heading to **${packageData.destination}**. Click below for detailed tracking information.`
             break
         }
 
@@ -307,21 +311,20 @@ For detailed tracking information, please use the Track Package button below.`
         }
       } else {
         return {
-          text: `❌ Package Not Found </br>
+          text: `I couldn't find a package with tracking number **${trackingNumber}**. 
 
-I was unable to locate a package with tracking number: ${trackingNumber}
+This could mean:
+- The tracking number might be incorrect
+- The package isn't in the system yet  
+- It's from an unsupported carrier
 
-This could be due to:
-• Incorrect tracking number
-• Package not yet in the system
-• Tracking number from an unsupported carrier
-
-Please verify the tracking number and try again, or contact your sender for assistance.`,
+Please verify the number and try again, or contact your sender for help.`,
           hasRedirectButton: false,
         }
       }
     }
 
+    // Handle general queries
     if (
       lowerText.includes("track") ||
       lowerText.includes("package") ||
@@ -330,48 +333,48 @@ Please verify the tracking number and try again, or contact your sender for assi
     ) {
       if (lowerText.includes("track")) {
         return {
-          text: "I can help you track your package! Please enter your tracking number here, and I'll offer to redirect you to the detailed tracking page.",
+          text: "I'd be happy to help you track your package! Just share your **tracking number** and I'll look it up for you and provide detailed information.",
           hasRedirectButton: false,
         }
       }
       if (lowerText.includes("where") || lowerText.includes("status")) {
         return {
-          text: "To check your package location and status, please provide your tracking number. I'll help you navigate to the tracking page for detailed information.",
+          text: "To check where your package is and its current status, I'll need your **tracking number**. Once you provide it, I can give you all the details about its location and progress.",
           hasRedirectButton: false,
         }
       }
       if (lowerText.includes("delivery time") || lowerText.includes("when")) {
         return {
-          text: "Delivery times depend on the shipping method and carrier. Share your tracking number and I'll help you find the estimated delivery date!",
+          text: "Delivery times vary by carrier and shipping method. If you share your **tracking number**, I can help you find the estimated delivery date and current progress.",
           hasRedirectButton: false,
         }
       }
       if (lowerText.includes("lost") || lowerText.includes("missing")) {
         return {
-          text: "If your package seems lost, let's check the tracking status first. Please provide your tracking number and I can help identify the carrier.",
+          text: "I understand your concern about a potentially lost package. Let's check its tracking status first - please provide your **tracking number** and I'll help you see exactly where it is.",
           hasRedirectButton: false,
         }
       }
       if (lowerText.includes("address") || lowerText.includes("change")) {
         return {
-          text: "To change delivery address, you'll need to contact the carrier directly before the package is out for delivery. Share your tracking number and I can help identify the carrier.",
+          text: "To change a delivery address, you'll need to contact the carrier directly, ideally before the package is out for delivery. Share your **tracking number** and I can help identify which carrier to contact.",
           hasRedirectButton: false,
         }
       }
       return {
-        text: "I can help you with package tracking! Please provide your tracking number and I'll guide you to the detailed tracking information.",
+        text: "I'm here to help with your package tracking needs! Just provide your **tracking number** and I'll give you detailed information about your shipment.",
         hasRedirectButton: false,
       }
     }
 
     return {
-      text: "I'm specifically designed to help with package tracking and delivery questions. Please share your tracking number or ask about package-related topics!",
+      text: "I specialize in package tracking and delivery assistance. Feel free to share your **tracking number** or ask me any questions about your shipments!",
       hasRedirectButton: false,
     }
   }
 
   const handleRedirectToTracking = (trackingNumber: string) => {
-    setSelectedTrackingNumber(trackingNumber)
+    router.push(`/details/${trackingNumber}`)
     setShowDetailsModal(true)
   }
 
@@ -412,10 +415,12 @@ Please verify the tracking number and try again, or contact your sender for assi
               <div
                 className={`rounded-xl px-4 py-2 ${message.sender === "user"
                   ? "bg-gradient-to-r from-emerald-800 to-teal-700 text-white"
-                  : "bg-white"
+                  : "bg"
                   }`}
               >
-                <p className="text-sm text-left">{message.text}</p>
+                <p className="text-sm text-left">
+                  {parseMessageText(message.text)}
+                </p>
               </div>
             </div>
           </div>
@@ -440,183 +445,16 @@ Please verify the tracking number and try again, or contact your sender for assi
 
   return (
     <>
-      <Card className="w-11/12 p-10 mx-auto bottom-6 right-6 z-50 transition-all duration-300}">
-        <div>
-          {/* If a tracking number is selected, show PackageDetails */}
-          {showDetailsModal && selectedTrackingNumber && (
-            <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center">
-              <div className="relative w-full h-full flex items-center justify-center">
-                <div className="absolute top-6 right-8 z-10">
-                  <Button
-                    variant="outline"
-                    size="icon"
-                    className="rounded-full bg-emerald-700 text-white hover:bg-emerald-800 shadow-lg"
-                    onClick={() => setShowDetailsModal(false)}
-                    aria-label="Close"
-                  >
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      className="h-6 w-6"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M6 18L18 6M6 6l12 12"
-                      />
-                    </svg>
-                  </Button>
-                </div>
-                <div className="w-full h-full flex items-center justify-center">
-                  <div className="bg-background rounded-xl shadow-2xl w-full max-w-4xl h-[90vh] overflow-y-auto p-0">
-                    <PackageDetails trackingNumber={selectedTrackingNumber} />
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-          {!showDetailsModal && (
-            <>
-              {/* Header */}
-              <CardHeader className="pb-6">
-                <CardTitle className="text-3xl font-serif font-bold text-foreground flex items-center justify-center gap-3">
-                  <div className="p-2 bg-emerald-100 rounded-lg">
-                    <Search className="w-6 h-6 text-emerald-800" />
-                  </div>
-                  Enter Tracking Number or ask questions
-                </CardTitle>
-                <CardDescription className="text-muted-foreground text-lg">
-                  Track packages from all major carriers worldwide
-                </CardDescription>
-              </CardHeader>
-
-              {/* Messages */}
-              <div className="flex-1 overflow-y-auto px-4 space-y-4">
-                {messages.slice(-1).map((message) => (
-                  <div key={message.id} className="space-y-2">
-                    <div
-                      className={`flex ${message.sender === "user"
-                          ? "justify-end"
-                          : "justify-start"
-                        }`}
-                    >
-                      <div
-                        className={`flex items-start gap-2 max-w-[60%] ${message.sender === "user"
-                            ? "flex-row-reverse"
-                            : "flex-row"
-                          }`}
-                      >
-                        <div
-                          className={`w-8 h-8 rounded-full flex items-center justify-center ${message.sender === "user"
-                              ? "bg-gradient-to-r from-emerald-800 to-teal-700 text-white"
-                              : "bg-white"
-                            }`}
-                        >
-                          {message.sender === "user" ? (
-                            <User className="h-4 w-4" />
-                          ) : (
-                            <Bot className="h-4 w-4" />
-                          )}
-                        </div>
-                        <div
-                          className={`rounded-xl px-4 py-2 ${message.sender === "user"
-                              ? "bg-gradient-to-r from-emerald-800 to-teal-700 text-white"
-                              : "bg-white"
-                            }`}
-                        >
-                          <p className="text-sm text-left">{message.text}</p>
-                        </div>
-                      </div>
-                    </div>
-                    {message.hasRedirectButton && message.trackingNumber && (
-                      <div className="flex justify-start">
-                        <Button
-                          onClick={() =>
-                            handleRedirectToTracking(message.trackingNumber!)
-                          }
-                          className="ml-10 bg-gradient-to-r from-emerald-700 to-teal-600 hover:from-emerald-600 hover:to-teal-500 text-white text-xs px-3 py-1 h-8"
-                        >
-                          <Package className="h-3 w-3 mr-1" />
-                          Track Package
-                        </Button>
-                      </div>
-                    )}
-                  </div>
-                ))}
-                <div ref={messagesEndRef} />
-              </div>
-
-              {/* Suggestions */}
-              {messages.length === 1 && (
-                <div className="px-4 pb-2">
-                  <p className="text-xs text-muted-foreground mb-2">
-                    Quick suggestions:
-                  </p>
-                  <div className="flex flex-wrap gap-1">
-                    {SUGGESTION_QUERIES.slice(0, 3).map((suggestion) => (
-                      <Button
-                        key={suggestion}
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleSuggestionClick(suggestion)}
-                        className="text-xs cursor-pointer h-7 px-2 bg-transparent hover:bg-white/80 border-white/30"
-                      >
-                        <Badge className="bg-emerald-700">{suggestion}</Badge>
-                      </Button>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Input */}
-              <div className="px-4 border-t border-white/20">
-                <div className="flex gap-2">
-                  <Input
-                    value={inputValue}
-                    onChange={(e) => setInputValue(e.target.value)}
-                    onKeyPress={(e) => {
-                      if (e.key === "Enter" && !loading) {
-                        handleSendMessage(inputValue)
-                      }
-                    }}
-                    disabled={loading}
-                    placeholder={
-                      loading
-                        ? "Processing your request..."
-                        : "Enter tracking number or ask questions..."
-                    }
-                    className="flex-1 text-sm p-5 bg-white border border-gray-200 rounded-lg! focus:bg-white focus:ring-0!"
-                  />
-                  <Button
-                    onClick={() => handleSendMessage(inputValue)}
-                    disabled={!inputValue.trim() || loading}
-                    className="bg-gradient-to-r from-emerald-800 to-teal-700 border-gray-200 rounded-lg! hover:from-emerald-700 hover:to-teal-600"
-                  >
-                    {loading ? (
-                      <Loader className="h-4 w-4 animate-spin" />
-                    ) : (
-                      <Send className="h-4 w-4" />
-                    )}
-                  </Button>
-                </div>
-              </div>
-            </>
-          )}
-        </div>
-      </Card>
-      <div className="flex items-center justify-center h-[70vh] bg-transparent">
+      <div className="flex items-center justify-center  bg-white border py-10 rounded-3xl">
         <div>
           <h3 className="text-2xl font-medium text-center py-5">Enter your tracking number or ask</h3>
-          <div className="relative p-4 space-y-4 min-h-16 min-w-md w-[45vw] bg-white rounded-2xl">
+          <div className="relative p-4 space-y-4 min-h-16 min-w-md w-[45vw] rounded-2xl">
             <div className="flex-1 overflow-y-auto px-4 space-y-4">
               {renderMessages()}
               <div ref={messagesEndRef} />
             </div>
           </div>
-          <div className="mt-3 relative border p-4 space-y-4 min-w-md w-[45vw] bg-card rounded-2xl">
+          <div className="mt-3 relative border p-4 space-y-4 min-w-md w-[45vw] rounded-2xl">
             <input
               type="text"
               value={inputValue}
